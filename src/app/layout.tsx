@@ -1,9 +1,12 @@
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { type Theme } from '@/lib/types'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
+import { AppContent } from './ui/AppContent'
+import { AppHeader } from './ui/AppHeader'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,7 +35,12 @@ export default async function RootLayout({
   return (
     <html lang="en" className={theme === 'dark' ? 'dark' : ''}>
       <body className={`${inter.className} antialiased`}>
-        <ThemeProvider initialTheme={theme}>{children}</ThemeProvider>
+        <ThemeProvider initialTheme={theme}>
+          <TooltipProvider>
+            <AppHeader />
+            <AppContent>{children}</AppContent>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
