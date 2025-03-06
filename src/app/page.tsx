@@ -1,10 +1,7 @@
 'use client'
 
 import PageWrapper from '@/components/PageWrapper'
-import { Body, H1 } from '@/components/typography'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Body, H1, H2 } from '@/components/typography'
 import {
   Tooltip,
   TooltipContent,
@@ -12,6 +9,7 @@ import {
 } from '@/components/ui/tooltip'
 import { formatUSD } from '@/lib/utils'
 import { useState } from 'react'
+import { InputForm } from './ui/InputForm'
 
 export default function HomePage() {
   const [inputDollars, setInputDollars] = useState(100)
@@ -21,39 +19,12 @@ export default function HomePage() {
   return (
     <PageWrapper>
       <H1>How much is that in today&apos;s dollars?</H1>
-      <div className="flex flex-col gap-2">
-        <Body className="font-semibold">Inflation Measure</Body>
-        <RadioGroup defaultValue="cpi" className="flex flex-row">
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="cpi" id="cpi" />
-            <Label htmlFor="cpi">CPI</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="pce" id="pce" />
-            <Label htmlFor="pce">PCE</Label>
-          </div>
-        </RadioGroup>
-      </div>
-      <Body>
-        How much would{' '}
-        <Input
-          className="inline w-14"
-          placeholder="100"
-          value={inputDollars}
-          onChange={() => setInputDollars}
-        />{' '}
-        dollars in{' '}
-        <Input
-          className="inline w-14"
-          placeholder="1975"
-          value={inputYear}
-          onChange={() => setInputYear}
-        />{' '}
-        be worth in today&apos;s dollars?
-      </Body>
+      <H2>Inputs</H2>
+      <InputForm />
+      <H2>Outputs</H2>
       <Tooltip>
         <TooltipTrigger className="mr-auto">
-          <div className="rounded-lg border px-4 py-2 shadow-xs">
+          <div className="rounded-lg border px-6 py-4 shadow-xs">
             <Body className="text-xl font-semibold">
               {formatUSD(outputDollars)}
             </Body>

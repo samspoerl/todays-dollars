@@ -1,3 +1,4 @@
+import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { type Theme } from '@/lib/types'
@@ -40,6 +41,7 @@ export default async function RootLayout({
             <AppHeader />
             <AppContent>{children}</AppContent>
           </TooltipProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
