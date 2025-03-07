@@ -17,14 +17,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { formatUSD } from '@/lib/utils'
+import { Outputs } from '@/lib/types'
 import { PlayIcon } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
+import { getInflationAdjustedAmounts } from '../lib/actions'
 
 const currentYear = new Date().getFullYear()
 
@@ -38,7 +35,11 @@ const formSchema = z.object({
     .max(currentYear, `Year must be ${currentYear} or earlier`),
 })
 
-export function InputForm() {
+interface InputFormProps {
+  handleSubmitInParent: (outputs: Outputs) => void
+}
+
+export function InputForm({ handleSubmitInParent }: InputFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,22 +49,25 @@ export function InputForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    toast.success('Successful', {
-      description: (
-        <div className="mt-2 text-sm">
-          <div>
-            <strong>Amount:</strong> {formatUSD(values.amount)}
-          </div>
-          <div>
-            <strong>Year:</strong> {values.year}
-          </div>
-          <div>
-            <strong>Measure:</strong> {values.inflationMeasure.toUpperCase()}
-          </div>
-        </div>
-      ),
-    })
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true)
+
+    // Call server action
+    const res = await getInflationAdjustedAmounts(values.amount, values.year)
+
+    if (res.ok) {
+      handleSubmitInParent({
+        startingAmount: values.amount,
+        year: values.year,
+        observations: res.data,
+      })
+    } else {
+      toast.error(res.message)
+    }
+
+    setIsLoading(false)
   }
 
   return (
@@ -85,7 +89,7 @@ export function InputForm() {
                     <Label htmlFor="cpi">CPI</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pce" id="pce" />
+                    <RadioGroupItem value="pce" id="pce" disabled={true} />
                     <Label htmlFor="pce">PCE</Label>
                   </div>
                 </RadioGroup>
@@ -102,20 +106,13 @@ export function InputForm() {
             name="amount"
             render={({ field, fieldState }) => (
               <FormItem className="mx-1 inline-block">
-                <Tooltip>
-                  <TooltipTrigger>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="inline-block w-14"
-                        placeholder="100"
-                      />
-                    </FormControl>
-                  </TooltipTrigger>
-                  {fieldState.error && (
-                    <TooltipContent>{fieldState.error.message}</TooltipContent>
-                  )}
-                </Tooltip>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="inline-block w-20 text-center"
+                    placeholder="100"
+                  />
+                </FormControl>
               </FormItem>
             )}
           />
@@ -125,27 +122,20 @@ export function InputForm() {
             name="year"
             render={({ field, fieldState }) => (
               <FormItem className="mx-1 inline-block">
-                <Tooltip>
-                  <TooltipTrigger>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="inline-block w-14"
-                        placeholder="1975"
-                      />
-                    </FormControl>
-                  </TooltipTrigger>
-                  {fieldState.error && (
-                    <TooltipContent>{fieldState.error.message}</TooltipContent>
-                  )}
-                </Tooltip>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="inline-block w-20 text-center"
+                    placeholder="1975"
+                  />
+                </FormControl>
               </FormItem>
             )}
           />
           <Body className="inline"> be worth in today&apos;s dollars?</Body>
         </div>
 
-        <Button type="submit" className="self-end">
+        <Button type="submit" className="self-end" disabled={isLoading}>
           <PlayIcon />
           Run
         </Button>

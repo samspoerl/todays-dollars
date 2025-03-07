@@ -7,45 +7,61 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Observation, Outputs } from '@/lib/types'
 import { formatUSD } from '@/lib/utils'
 import { useState } from 'react'
+import { Chart } from './ui/Chart'
 import { InputForm } from './ui/InputForm'
 
 export default function HomePage() {
-  const [inputDollars, setInputDollars] = useState(100)
-  const [inputYear, setInputYear] = useState(1975)
-  const [outputDollars, setOutputDollars] = useState(547)
+  const [inputDollars, setInputDollars] = useState<number>()
+  const [inputYear, setInputYear] = useState<number>()
+  const [outputDollars, setOutputDollars] = useState<number>()
+  const [observations, setObservations] = useState<Observation[]>([])
+
+  function handleSubmit(outputs: Outputs) {
+    setInputDollars(outputs.startingAmount)
+    setInputYear(outputs.year)
+    setObservations(outputs.observations)
+    setOutputDollars(
+      outputs.observations[outputs.observations.length - 1].value
+    )
+  }
 
   return (
     <PageWrapper>
       <H1>How much is that in today&apos;s dollars?</H1>
       <H2>Inputs</H2>
-      <InputForm />
+      <InputForm handleSubmitInParent={handleSubmit} />
       <H2>Outputs</H2>
       <Tooltip>
-        <TooltipTrigger className="mr-auto">
+        <TooltipTrigger className="mr-auto flex flex-row items-center gap-2">
           <div className="rounded-lg border px-6 py-4 shadow-xs">
             <Body className="text-xl font-semibold">
-              {formatUSD(outputDollars)}
+              {outputDollars ? formatUSD(outputDollars) : '$ -'}
             </Body>
           </div>
+          <Body>{"in today's dollars"}</Body>
         </TooltipTrigger>
-        <TooltipContent>
-          <Body>
-            <span className="underline underline-offset-2">
-              {formatUSD(inputDollars)}
-            </span>{' '}
-            in <span className="underline underline-offset-2">{inputYear}</span>{' '}
-            would be worth{' '}
-            <span className="underline underline-offset-2">
-              {formatUSD(outputDollars)}
-            </span>{' '}
-            in today&apos;s dollars.
-          </Body>
-        </TooltipContent>
+        {outputDollars && inputDollars && (
+          <TooltipContent>
+            <Body>
+              <span className="underline underline-offset-2">
+                {formatUSD(inputDollars)}
+              </span>{' '}
+              in{' '}
+              <span className="underline underline-offset-2">{inputYear}</span>{' '}
+              would be worth{' '}
+              <span className="underline underline-offset-2">
+                {formatUSD(outputDollars)}
+              </span>{' '}
+              in today&apos;s dollars.
+            </Body>
+          </TooltipContent>
+        )}
       </Tooltip>
-      <div className="flex size-40 items-center justify-center rounded-lg border shadow-xs">
-        <Body>Chart</Body>
+      <div className="flex items-center justify-center rounded-lg border shadow-xs">
+        <Chart chartData={observations} />
       </div>
     </PageWrapper>
   )
