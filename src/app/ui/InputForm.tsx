@@ -79,7 +79,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
         <FormField
           control={form.control}
           name="inflationMeasure"
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormLabel>Inflation Measure</FormLabel>
               <FormControl>
@@ -104,7 +104,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
           <FormField
             control={form.control}
             name="amount"
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem className="mx-1 inline-block">
                 <FormControl>
                   <Input
@@ -120,7 +120,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
           <FormField
             control={form.control}
             name="year"
-            render={({ field, fieldState }) => (
+            render={({ field }) => (
               <FormItem className="mx-1 inline-block">
                 <FormControl>
                   <Input

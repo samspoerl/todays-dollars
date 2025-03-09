@@ -49,7 +49,7 @@ export const ThemeProvider = ({
     return () => {
       mediaQuery.removeEventListener('change', handleMediaQueryChange)
     }
-  }, [])
+  }, [updateTheme])
 
   // Handle no preference by setting to system default
   useEffect(() => {
@@ -61,7 +61,7 @@ export const ThemeProvider = ({
       const systemTheme = mediaQuery.matches ? 'dark' : 'light'
       updateTheme(systemTheme)
     }
-  }, [])
+  }, [updateTheme])
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark'
