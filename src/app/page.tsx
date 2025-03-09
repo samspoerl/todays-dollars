@@ -16,7 +16,7 @@ import { InputForm } from './ui/InputForm'
 export default function HomePage() {
   const [inputDollars, setInputDollars] = useState<number>()
   const [inputYear, setInputYear] = useState<number>()
-  const [outputDollars, setOutputDollars] = useState<number>()
+  const [outputDollars, setOutputDollars] = useState<number | null>()
   const [observations, setObservations] = useState<Observation[]>([])
 
   function handleSubmit(outputs: Outputs) {
