@@ -18,6 +18,18 @@ export const metadata: Metadata = {
   title: 'Inflation Adjusted',
   description:
     "An app to answer the question: 'How much is that in today's dollars?'",
+  keywords: [
+    'inflation calculator',
+    'inflation adjusted',
+    'inflation adjuster',
+    'adjust for inflation',
+    "today's dollars",
+    "today's money",
+    "how much is X worth in today's money?",
+    'purchasing power',
+    'cost of living adjustment',
+    'best inflation calculator',
+  ],
 }
 
 async function getInitialTheme(): Promise<Theme> {
