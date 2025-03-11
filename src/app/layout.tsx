@@ -7,6 +7,7 @@ import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import { AppContent } from './ui/AppContent'
+import { AppFooter } from './ui/AppFooter'
 import { AppHeader } from './ui/AppHeader'
 
 const inter = Inter({
@@ -52,6 +53,7 @@ export default async function RootLayout({
           <TooltipProvider>
             <AppHeader />
             <AppContent>{children}</AppContent>
+            <AppFooter />
           </TooltipProvider>
           <Toaster />
         </ThemeProvider>
