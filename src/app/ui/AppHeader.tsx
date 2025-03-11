@@ -34,7 +34,7 @@ export function AppHeader() {
       </NavigationMenu>
       <div className="flex items-center gap-1">
         <ThemeToggle />
-        <GitHubLink href="https://github.com/samspoerl/inflation-adjusted" />
+        <GitHubLink href="https://github.com/samspoerl/todays-dollars" />
       </div>
     </header>
   )
