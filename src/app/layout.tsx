@@ -7,6 +7,7 @@ import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import './globals.css'
 import { AppContent } from './ui/AppContent'
+import { AppFooter } from './ui/AppFooter'
 import { AppHeader } from './ui/AppHeader'
 
 const inter = Inter({
@@ -15,7 +16,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Inflation Adjusted',
+  title: "Today's Dollars",
   description:
     "An app to answer the question: 'How much is that in today's dollars?'",
   keywords: [
@@ -52,6 +53,7 @@ export default async function RootLayout({
           <TooltipProvider>
             <AppHeader />
             <AppContent>{children}</AppContent>
+            <AppFooter />
           </TooltipProvider>
           <Toaster />
         </ThemeProvider>

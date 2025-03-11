@@ -1,6 +1,6 @@
 {
-  "name": "inflation-adjusted",
-  "version": "0.1.0",
+  "name": "todays-dollars",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

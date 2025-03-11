@@ -31,11 +31,8 @@ export default function AboutPage() {
           </a>
         </li>
         <li>
-          <a
-            href="https://vercel.com/docs/functions/runtimes/python"
-            className={externalLinkStyle}
-          >
-            Python serverless backend
+          <a href="https://upstash.com/" className={externalLinkStyle}>
+            Upstash for Redis
           </a>
         </li>
         <li>
@@ -51,8 +48,30 @@ export default function AboutPage() {
         <a href="https://fred.stlouisfed.org/" className={externalLinkStyle}>
           FRED
         </a>
-        ).
+        ) API:
       </Body>
+      <ul className="ml-6 list-disc space-y-2">
+        <li>
+          Consumer Price Index (
+          <a
+            href="https://fred.stlouisfed.org/series/CPIAUCSL"
+            className={externalLinkStyle}
+          >
+            CPI
+          </a>
+          )
+        </li>
+        <li>
+          Personal Consumption Expenditures Price Index (
+          <a
+            href="https://fred.stlouisfed.org/series/PCEPI"
+            className={externalLinkStyle}
+          >
+            PCE
+          </a>
+          )
+        </li>
+      </ul>
     </PageWrapper>
   )
 }
