@@ -5,6 +5,8 @@ import logMetrics from '@/lib/logs'
 import { type Inputs, type Observation, type ServerResponse } from '@/lib/types'
 import { after } from 'next/server'
 
+const ENABLE_LOGGING = process.env.ENABLE_LOGGING
+
 export async function getInflationAdjustedAmounts({
   inflationMeasure,
   startAmount,
@@ -58,8 +60,10 @@ export async function getInflationAdjustedAmounts({
 
   const duration = Date.now() - start
 
-  // Use 'after' to log metrics after returning response to client
-  after(logMetrics(duration))
+  if (ENABLE_LOGGING !== 'false') {
+    // Use 'after' to log metrics after returning response to client
+    after(logMetrics(duration, inflationMeasure))
+  }
 
   return {
     ok: true,
