@@ -2,6 +2,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { type Theme } from '@/lib/types'
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
@@ -51,12 +52,15 @@ export default async function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider initialTheme={theme}>
           <TooltipProvider>
-            <AppHeader />
-            <AppContent>{children}</AppContent>
-            <AppFooter />
+            <div className="flex min-h-screen flex-col">
+              <AppHeader />
+              <AppContent>{children}</AppContent>
+              <AppFooter />
+            </div>
           </TooltipProvider>
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
