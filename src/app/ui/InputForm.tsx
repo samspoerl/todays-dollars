@@ -1,9 +1,5 @@
 'use client'
 
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-
 import { Body } from '@/components/typography'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,59 +11,49 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Outputs } from '@/lib/types'
+import { Inputs, inputsSchema, Outputs } from '@/lib/types'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { PlayIcon } from 'lucide-react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { getInflationAdjustedAmounts } from '../lib/actions'
-
-const currentYear = new Date().getFullYear()
-
-const formSchema = z.object({
-  inflationMeasure: z.enum(['cpi', 'pce']),
-  amount: z.coerce.number().positive('Amount must be positive'),
-  year: z.coerce
-    .number()
-    .int()
-    .min(1947, 'Year must be 1947 or later')
-    .max(currentYear, `Year must be ${currentYear} or earlier`),
-})
 
 interface InputFormProps {
   handleSubmitInParent: (outputs: Outputs) => void
 }
 
 export function InputForm({ handleSubmitInParent }: InputFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<Inputs>({
+    resolver: zodResolver(inputsSchema),
     defaultValues: {
-      amount: 100,
       inflationMeasure: 'cpi',
-      year: 1975,
+      startAmount: 100,
+      startYear: 1975,
     },
   })
 
   const [isLoading, setIsLoading] = useState(false)
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: Inputs) {
     setIsLoading(true)
-
-    // Call server action
-    const res = await getInflationAdjustedAmounts(values.amount, values.year)
-
-    if (res.ok) {
-      handleSubmitInParent({
-        startingAmount: values.amount,
-        year: values.year,
-        observations: res.data,
-      })
-    } else {
-      toast.error(res.message)
+    try {
+      const res = await getInflationAdjustedAmounts({ ...values })
+      if (res.ok) {
+        handleSubmitInParent({
+          startingAmount: values.startAmount,
+          year: values.startYear,
+          observations: res.data,
+        })
+      } else {
+        toast.error(res.message)
+      }
+    } catch {
+      toast.error('An unexpected error has occurred.')
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   return (
@@ -79,19 +65,27 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
         <FormField
           control={form.control}
           name="inflationMeasure"
-          render={() => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Inflation Measure</FormLabel>
               <FormControl>
-                <RadioGroup defaultValue="cpi" className="flex flex-row">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cpi" id="cpi" />
-                    <Label htmlFor="cpi">CPI</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pce" id="pce" disabled={true} />
-                    <Label htmlFor="pce">PCE</Label>
-                  </div>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-row"
+                >
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <RadioGroupItem value="cpi" />
+                    </FormControl>
+                    <FormLabel className="font-normal">CPI</FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <RadioGroupItem value="pce" />
+                    </FormControl>
+                    <FormLabel className="font-normal">PCE</FormLabel>
+                  </FormItem>
                 </RadioGroup>
               </FormControl>
               <FormMessage />
@@ -103,7 +97,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
           <Body className="inline">How much would </Body>
           <FormField
             control={form.control}
-            name="amount"
+            name="startAmount"
             render={({ field }) => (
               <FormItem className="mx-1 inline-block">
                 <FormControl>
@@ -119,7 +113,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
           <Body className="inline"> dollars in </Body>
           <FormField
             control={form.control}
-            name="year"
+            name="startYear"
             render={({ field }) => (
               <FormItem className="mx-1 inline-block">
                 <FormControl>
@@ -137,7 +131,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
 
         <Button type="submit" className="self-end" disabled={isLoading}>
           <PlayIcon />
-          Run
+          Calculate
         </Button>
       </form>
     </Form>

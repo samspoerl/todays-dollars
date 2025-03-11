@@ -1,13 +1,14 @@
 'use server'
 
 import { getInflationData } from '@/lib/inflation-data'
-import { Observation, ServerResponse } from '@/lib/types'
+import { Inputs, Observation, ServerResponse } from '@/lib/types'
 
-export async function getInflationAdjustedAmounts(
-  startingAmount: number,
-  startYear: number
-): Promise<ServerResponse<Observation[]>> {
-  const res = await getInflationData()
+export async function getInflationAdjustedAmounts({
+  inflationMeasure,
+  startAmount,
+  startYear,
+}: Inputs): Promise<ServerResponse<Observation[]>> {
+  const res = await getInflationData(inflationMeasure)
   if (!res.ok) {
     return res
   }
@@ -23,7 +24,7 @@ export async function getInflationAdjustedAmounts(
   if (startIndex === -1) {
     return {
       ok: false,
-      message: `No data available for the year ${startYear}. Data is available from ${observations[0].date.slice(0, 4)} to ${observations.at(-1)?.date.slice(0, 4)}.`,
+      message: `No data is available for the ${inflationMeasure.toUpperCase()} measure for the year ${startYear}. Data is available from ${observations[0].date.slice(0, 4)} to ${observations.at(-1)?.date.slice(0, 4)}.`,
     }
   }
 
@@ -38,7 +39,7 @@ export async function getInflationAdjustedAmounts(
     }
   }
 
-  let runningValue: number = startingAmount
+  let runningValue: number = startAmount
   const inflationAdjAmounts: Observation[] = []
 
   for (let i = 0; i < relevantObservations.length; i++) {

@@ -2,7 +2,7 @@
 'use server'
 
 import { FredResponse } from '@/lib/fred/fred-types'
-import { ServerResponse } from '@/lib/types'
+import { type InflationMeasure, type ServerResponse } from '@/lib/types'
 
 // FRED API query params
 const FRED_API_KEY = process.env.FRED_API_KEY
@@ -14,8 +14,17 @@ const LIMIT = null
 
 /** Fetch latest inflation data from FRED.
  */
-export async function callFred(): Promise<ServerResponse<FredResponse>> {
-  const uri = `${FRED_URL}?series_id=${SERIES_ID}&api_key=${FRED_API_KEY}&file_type=${FILE_TYPE}&units=${UNITS}${LIMIT ? `&limit=${LIMIT}` : ''}`
+export async function callFred(
+  inflationMeasure: InflationMeasure
+): Promise<ServerResponse<FredResponse>> {
+  let seriesId: string
+  if (inflationMeasure === 'pce') {
+    seriesId = 'PCEPI'
+  } else {
+    seriesId = 'CPIAUCSL'
+  }
+
+  const uri = `${FRED_URL}?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=${FILE_TYPE}&units=${UNITS}${LIMIT ? `&limit=${LIMIT}` : ''}`
 
   try {
     const fredRes = await fetch(uri)
