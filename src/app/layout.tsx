@@ -15,7 +15,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Inflation Adjusted',
+  title: "Today's Dollars",
   description:
     "An app to answer the question: 'How much is that in today's dollars?'",
   keywords: [
