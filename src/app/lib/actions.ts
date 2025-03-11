@@ -1,13 +1,17 @@
 'use server'
 
 import { getInflationData } from '@/lib/inflation-data'
-import { Inputs, Observation, ServerResponse } from '@/lib/types'
+import logMetrics from '@/lib/logs'
+import { type Inputs, type Observation, type ServerResponse } from '@/lib/types'
+import { after } from 'next/server'
 
 export async function getInflationAdjustedAmounts({
   inflationMeasure,
   startAmount,
   startYear,
 }: Inputs): Promise<ServerResponse<Observation[]>> {
+  const start = Date.now()
+
   const res = await getInflationData(inflationMeasure)
   if (!res.ok) {
     return res
@@ -51,6 +55,11 @@ export async function getInflationAdjustedAmounts({
       value: runningValue,
     })
   }
+
+  const duration = Date.now() - start
+
+  // Use 'after' to log metrics after returning response to client
+  after(logMetrics(duration))
 
   return {
     ok: true,
