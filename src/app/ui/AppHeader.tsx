@@ -11,7 +11,7 @@ import { ThemeToggle } from './ThemeToggle'
 
 export function AppHeader() {
   return (
-    <header className="bg-background sticky top-0 z-10 flex w-full items-center justify-between p-2">
+    <header className="bg-background sticky top-0 z-10 flex w-full grow-0 items-center justify-between p-2">
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>

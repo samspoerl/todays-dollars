@@ -52,9 +52,11 @@ export default async function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider initialTheme={theme}>
           <TooltipProvider>
-            <AppHeader />
-            <AppContent>{children}</AppContent>
-            <AppFooter />
+            <div className="flex min-h-screen flex-col">
+              <AppHeader />
+              <AppContent>{children}</AppContent>
+              <AppFooter />
+            </div>
           </TooltipProvider>
           <Toaster />
         </ThemeProvider>
