@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
-import { Inputs, inputsSchema, Outputs } from '@/lib/types'
+import { CalculationInputs, inputsSchema, CalculationResult } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlayIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -21,11 +21,11 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 interface InputFormProps {
-  handleSubmitInParent: (outputs: Outputs) => void
+  handleSubmitInParent: (outputs: CalculationResult) => void
 }
 
 export function InputForm({ handleSubmitInParent }: InputFormProps) {
-  const form = useForm<Inputs>({
+  const form = useForm<CalculationInputs>({
     resolver: zodResolver(inputsSchema),
     defaultValues: {
       inflationMeasure: 'CPI',
@@ -36,7 +36,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
 
   const [isLoading, setIsLoading] = useState(false)
 
-  async function onSubmit(values: Inputs) {
+  async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
     try {
       const res = await getInflationAdjustedAmounts({ ...values })

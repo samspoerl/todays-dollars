@@ -3,7 +3,7 @@
 import { getInflationData } from '@/lib/inflation-data'
 import logMetrics from '@/lib/logs'
 import {
-  type Inputs,
+  type CalculationInputs,
   type ObservationDto,
   type ServerResponse,
 } from '@/lib/types'
@@ -13,7 +13,7 @@ export async function getInflationAdjustedAmounts({
   inflationMeasure,
   startAmount,
   startYear,
-}: Inputs): Promise<ServerResponse<ObservationDto[]>> {
+}: CalculationInputs): Promise<ServerResponse<ObservationDto[]>> {
   const start = Date.now()
 
   const res = await getInflationData(inflationMeasure)

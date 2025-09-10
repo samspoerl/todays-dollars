@@ -53,11 +53,11 @@ export const inputsSchema = z.object({
     .max(currentYear, `Year must be ${currentYear} or earlier`),
 })
 
-export type Inputs = z.infer<typeof inputsSchema>
+export type CalculationInputs = z.infer<typeof inputsSchema>
 
 // CALCULATION RESULT
 
-export interface Outputs {
+export interface CalculationResult {
   startingAmount: number
   year: number
   observations: ObservationDto[]

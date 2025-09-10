@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { ObservationDto, Outputs } from '@/lib/types'
+import { ObservationDto, CalculationResult } from '@/lib/types'
 import { formatUSD } from '@/lib/utils'
 import { useState } from 'react'
 import { Chart } from './ui/Chart'
@@ -19,7 +19,7 @@ export default function HomePage() {
   const [outputDollars, setOutputDollars] = useState<number | null>()
   const [observations, setObservations] = useState<ObservationDto[]>([])
 
-  function handleSubmit(outputs: Outputs) {
+  function handleSubmit(outputs: CalculationResult) {
     setInputDollars(outputs.startingAmount)
     setInputYear(outputs.year)
     setObservations(outputs.observations)
