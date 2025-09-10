@@ -31,8 +31,8 @@ export default function AboutPage() {
           </a>
         </li>
         <li>
-          <a href="https://upstash.com/" className={externalLinkStyle}>
-            Upstash for Redis
+          <a href="https://www.mongodb.com/" className={externalLinkStyle}>
+            MongoDB
           </a>
         </li>
         <li>

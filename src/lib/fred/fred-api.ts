@@ -7,7 +7,8 @@ import { type InflationMeasure, type ServerResponse } from '@/lib/types'
 // FRED API query params
 const FRED_API_KEY = process.env.FRED_API_KEY
 const FRED_URL = 'https://api.stlouisfed.org/fred/series/observations'
-const SERIES_ID = 'CPIAUCSL'
+const CPI_SERIES_ID = 'CPIAUCSL'
+const PCE_SERIES_ID = 'PCEPI'
 const FILE_TYPE = 'json'
 const UNITS = 'pch'
 const LIMIT = null
@@ -17,13 +18,10 @@ const LIMIT = null
 export async function callFred(
   inflationMeasure: InflationMeasure
 ): Promise<ServerResponse<FredResponse>> {
-  let seriesId: string
-  if (inflationMeasure === 'pce') {
-    seriesId = 'PCEPI'
-  } else {
-    seriesId = 'CPIAUCSL'
-  }
+  // Determine the series ID based on the inflation measure
+  const seriesId = inflationMeasure === 'PCE' ? PCE_SERIES_ID : CPI_SERIES_ID
 
+  // Build the URI for the FRED API request
   const uri = `${FRED_URL}?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=${FILE_TYPE}&units=${UNITS}${LIMIT ? `&limit=${LIMIT}` : ''}`
 
   try {
@@ -36,12 +34,6 @@ export async function callFred(
     }
   } catch (error) {
     console.error('Error while fetching from FRED API:', error)
-    if (error instanceof Error) {
-      return {
-        ok: false,
-        message: error.message,
-      }
-    }
     return {
       ok: false,
       message: 'An unexpected error has occurred.',

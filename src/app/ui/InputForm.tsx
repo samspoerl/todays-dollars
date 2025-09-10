@@ -28,7 +28,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
   const form = useForm<Inputs>({
     resolver: zodResolver(inputsSchema),
     defaultValues: {
-      inflationMeasure: 'cpi',
+      inflationMeasure: 'CPI',
       startAmount: 100,
       startYear: 1975,
     },
@@ -76,13 +76,13 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
                 >
                   <FormItem className="flex items-center gap-2">
                     <FormControl>
-                      <RadioGroupItem value="cpi" />
+                      <RadioGroupItem value="CPI" />
                     </FormControl>
                     <FormLabel className="font-normal">CPI</FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center gap-2">
                     <FormControl>
-                      <RadioGroupItem value="pce" />
+                      <RadioGroupItem value="PCE" />
                     </FormControl>
                     <FormLabel className="font-normal">PCE</FormLabel>
                   </FormItem>

@@ -7,7 +7,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { Observation } from '@/lib/types'
+import { ObservationDto } from '@/lib/types'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 
 import { formatUSD } from '@/lib/utils'
@@ -38,7 +38,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface ChartProps {
-  chartData: Observation[]
+  chartData: ObservationDto[]
 }
 
 export function Chart({ chartData }: ChartProps) {

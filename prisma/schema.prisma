@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma/client"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+
+enum InflationMeasure {
+  CPI
+  PCE
+}
+
+// MODELS
+
+// Individual inflation data points
+model Observation {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  inflationMeasure InflationMeasure
+  date             String // Format: YYYY-MM-DD
+  value            Float
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([inflationMeasure, date])
+  @@map("observations")
+}
+
+// Metadata about the last data fetch for each measure
+model Metadata {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  inflationMeasure    InflationMeasure @unique
+  lastObservationDate String // Format: YYYY-MM-DD
+  totalObservations   Int
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("metadata")
+}
+
+// Individual metric records for better analytics
+model UsageMetric {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  date             String // Format: yyyyMMdd
+  inflationMeasure InflationMeasure
+  duration         Float // Duration in milliseconds
+  createdAt        DateTime         @default(now())
+
+  @@index([date, inflationMeasure])
+  @@index([createdAt])
+  @@map("usage_metrics")
+}

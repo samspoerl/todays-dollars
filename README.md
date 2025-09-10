@@ -7,7 +7,7 @@ This app aims to answer the question: "How much is that in today's dollars?" For
 - [Next.js 15](https://nextjs.org/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 - [Shadcn](https://ui.shadcn.com/)
-- [Upstash for Redis](https://upstash.com/)
+- [MongoDB](https://www.mongodb.com/)
 - [Vercel](https://vercel.com/)
 
 ## Data
