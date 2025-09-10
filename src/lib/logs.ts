@@ -2,18 +2,20 @@
 
 import prisma from '@/lib/prisma'
 import { type InflationMeasure } from '@/lib/types'
-import { format } from 'date-fns'
 
-export default async function logMetrics(
-  duration: number,
+export default async function logMetrics({
+  timestamp,
+  duration,
+  inflationMeasure,
+}: {
+  timestamp: Date
+  duration: number
   inflationMeasure: InflationMeasure
-) {
+}) {
   try {
-    const dateKey = format(new Date(), 'yyyyMMdd')
-
     await prisma.usageMetric.create({
       data: {
-        date: dateKey,
+        timestamp,
         inflationMeasure,
         duration,
       },

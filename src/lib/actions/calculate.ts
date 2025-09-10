@@ -14,58 +14,46 @@ export async function getInflationAdjustedAmounts({
   startAmount,
   startYear,
 }: CalculationInputs): Promise<ServerResponse<ObservationDto[]>> {
+  // Record start for duration metric
   const start = Date.now()
 
-  const res = await getInflationData(inflationMeasure)
+  // Get inflation data
+  const res = await getInflationData({ inflationMeasure, startYear })
   if (!res.ok) {
     return res
   }
-
   const observations = res.data
 
-  // Find the first observation for the specified year
-  const startIndex = observations.findIndex((obs) =>
-    obs.date.startsWith(startYear.toString())
-  )
-
-  // If the year wasn't found, return an error
-  if (startIndex === -1) {
+  // If no observations were found, return an error
+  if (observations.length === 0) {
     return {
       ok: false,
-      message: `No data is available for the ${inflationMeasure} measure for the year ${startYear}. Data is available from ${observations[0].date.slice(0, 4)} to ${observations.at(-1)?.date.slice(0, 4)}.`,
-    }
-  }
-
-  // Get observations from the start year to the end
-  const relevantObservations = observations.slice(startIndex)
-
-  // If there are no relevant observations, return an error
-  if (relevantObservations.length === 0) {
-    return {
-      ok: false,
-      message: 'No inflation data exists for the specified date range.',
+      message:
+        'No inflation data exists for the specified measure and date range.',
     }
   }
 
   let runningValue: number = startAmount
   const inflationAdjAmounts: ObservationDto[] = []
 
-  for (let i = 0; i < relevantObservations.length; i++) {
-    const pctChange = relevantObservations[i].value
+  for (let i = 0; i < observations.length; i++) {
+    const pctChange = observations[i].value
     const pctChangeDecimal = pctChange / 100
     runningValue = runningValue * (1 + pctChangeDecimal)
     inflationAdjAmounts.push({
-      id: relevantObservations[i].id,
+      id: observations[i].id,
       inflationMeasure,
-      date: relevantObservations[i].date,
+      year: observations[i].year,
+      month: observations[i].month,
       value: runningValue,
     })
   }
 
-  const duration = Date.now() - start
-
+  // Log metrics
   // Use 'after' to log metrics after returning response to client
-  after(logMetrics(duration, inflationMeasure))
+  const timestamp = new Date()
+  const duration = Date.now() - start
+  after(logMetrics({ timestamp, duration, inflationMeasure }))
 
   return {
     ok: true,

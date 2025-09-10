@@ -12,12 +12,16 @@ import {
 } from '@/lib/types'
 
 const CACHE_EXPIRY_DAYS = 7 // 7 days
-const FORCE_REFRESH = true
+const FORCE_REFRESH = false
 
 // Helper: fetch and cache inflation data from FRED API
-async function fetchAndCacheInflationData(
+async function fetchAndCacheInflationData({
+  inflationMeasure,
+  startYear,
+}: {
   inflationMeasure: InflationMeasure
-): Promise<ServerResponse<ObservationDto[]>> {
+  startYear: number
+}): Promise<ServerResponse<ObservationDto[]>> {
   // Fetch latest inflation data from FRED API
   const fredRes = await callFred(inflationMeasure)
   if (!fredRes.ok) {
@@ -28,7 +32,9 @@ async function fetchAndCacheInflationData(
   // Transform FRED data to create DTOs
   const transformed: ObservationCreateDto[] = data.observations.map((obs) => ({
     inflationMeasure,
-    date: obs.date,
+    year: parseInt(obs.date.slice(0, 4)),
+    month: parseInt(obs.date.slice(5, 7)),
+    fredDate: obs.date,
     value: obs.value === '.' ? 0 : parseFloat(obs.value),
   }))
 
@@ -42,24 +48,28 @@ async function fetchAndCacheInflationData(
     data: transformed,
   })
 
-  // Get the observations just created
-  const observations = await prisma.observation.findMany({
-    where: { inflationMeasure },
-    select: observationSelect,
-  })
-
   // Update metadata
   await prisma.metadata.upsert({
     where: { inflationMeasure },
     update: {
-      lastObservationDate: observations[observations.length - 1]?.date || '',
-      totalObservations: observations.length,
+      lastObservationDate: transformed[transformed.length - 1]?.fredDate || '',
+      totalObservations: transformed.length,
     },
     create: {
       inflationMeasure,
-      lastObservationDate: observations[observations.length - 1]?.date || '',
-      totalObservations: observations.length,
+      lastObservationDate: transformed[transformed.length - 1]?.fredDate || '',
+      totalObservations: transformed.length,
     },
+  })
+
+  // Get all observations for this measure greater than or equal to the start year
+  const observations = await prisma.observation.findMany({
+    select: observationSelect,
+    where: {
+      inflationMeasure,
+      year: { gte: startYear },
+    },
+    orderBy: [{ year: 'asc' }, { month: 'asc' }],
   })
 
   return {
@@ -69,9 +79,13 @@ async function fetchAndCacheInflationData(
 }
 
 // Helper: get cached observations from MongoDB
-async function getCachedObservations(
+async function getCachedObservations({
+  inflationMeasure,
+  startYear,
+}: {
   inflationMeasure: InflationMeasure
-): Promise<ServerResponse<ObservationDto[]>> {
+  startYear: number
+}): Promise<ServerResponse<ObservationDto[]>> {
   try {
     // Get metadata to check if data is fresh
     const metadata = await prisma.metadata.findUnique({
@@ -101,8 +115,11 @@ async function getCachedObservations(
     // Data is fresh, get all observations for this measure
     const observations = await prisma.observation.findMany({
       select: observationSelect,
-      where: { inflationMeasure },
-      orderBy: { date: 'asc' },
+      where: {
+        inflationMeasure,
+        year: { gte: startYear },
+      },
+      orderBy: [{ year: 'asc' }, { month: 'asc' }],
     })
 
     return {
@@ -119,17 +136,24 @@ async function getCachedObservations(
 }
 
 // Main function to get inflation data
-export async function getInflationData(
+export async function getInflationData({
+  inflationMeasure,
+  startYear,
+}: {
   inflationMeasure: InflationMeasure
-): Promise<ServerResponse<ObservationDto[]>> {
+  startYear: number
+}): Promise<ServerResponse<ObservationDto[]>> {
   // Try to get from cache first
   if (!FORCE_REFRESH) {
-    const cachedResult = await getCachedObservations(inflationMeasure)
-    if (cachedResult.ok) {
+    const cachedResult = await getCachedObservations({
+      inflationMeasure,
+      startYear,
+    })
+    if (cachedResult.ok && cachedResult.data.length > 0) {
       return cachedResult
     }
   }
 
   // If not in cache or stale, fetch and cache
-  return fetchAndCacheInflationData(inflationMeasure)
+  return fetchAndCacheInflationData({ inflationMeasure, startYear })
 }

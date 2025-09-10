@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
-import { CalculationInputs, inputsSchema, CalculationResult } from '@/lib/types'
+import { CalculationInputs, CalculationResult, inputsSchema } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlayIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -39,7 +39,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
   async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
     try {
-      const res = await getInflationAdjustedAmounts({ ...values })
+      const res = await getInflationAdjustedAmounts(values)
       if (res.ok) {
         handleSubmitInParent({
           startingAmount: values.startAmount,

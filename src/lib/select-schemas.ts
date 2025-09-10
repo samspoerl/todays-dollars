@@ -7,7 +7,8 @@ import { type MetadataDto, type ObservationDto } from '@/lib/types'
 export const observationSelect = {
   id: true,
   inflationMeasure: true,
-  date: true,
+  year: true,
+  month: true,
   value: true,
 } satisfies Record<keyof ObservationDto, true>
 

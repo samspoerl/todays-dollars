@@ -27,9 +27,9 @@ type AuditFields = 'createdAt' | 'updatedAt'
 
 // OBSERVATIONS
 
-export type ObservationDto = Omit<Observation, AuditFields>
+export type ObservationDto = Omit<Observation, AuditFields | 'fredDate'>
 
-export type ObservationCreateDto = Omit<ObservationDto, 'id'>
+export type ObservationCreateDto = Omit<Observation, AuditFields | 'id'>
 
 // INFLATION MEASURE
 

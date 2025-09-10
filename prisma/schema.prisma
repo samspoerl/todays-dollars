@@ -21,12 +21,14 @@ enum InflationMeasure {
 model Observation {
   id               String           @id @default(auto()) @map("_id") @db.ObjectId
   inflationMeasure InflationMeasure
-  date             String // Format: YYYY-MM-DD
+  year             Int // e.g., 2023
+  month            Int // 1-12
+  fredDate         String // Original FRED date string (YYYY-MM-DD) for validation
   value            Float
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  @@unique([inflationMeasure, date])
+  @@unique([inflationMeasure, year, month])
   @@map("observations")
 }
 
@@ -34,7 +36,7 @@ model Observation {
 model Metadata {
   id                  String           @id @default(auto()) @map("_id") @db.ObjectId
   inflationMeasure    InflationMeasure @unique
-  lastObservationDate String // Format: YYYY-MM-DD
+  lastObservationDate String // FRED date format: YYYY-MM-DD
   totalObservations   Int
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -42,15 +44,13 @@ model Metadata {
   @@map("metadata")
 }
 
-// Individual metric records for better analytics
+// Usage metrics for analytics
 model UsageMetric {
   id               String           @id @default(auto()) @map("_id") @db.ObjectId
-  date             String // Format: yyyyMMdd
+  timestamp        DateTime
   inflationMeasure InflationMeasure
   duration         Float // Duration in milliseconds
-  createdAt        DateTime         @default(now())
 
-  @@index([date, inflationMeasure])
-  @@index([createdAt])
+  @@index([timestamp, inflationMeasure])
   @@map("usage_metrics")
 }
