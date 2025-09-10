@@ -12,13 +12,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
 import { Inputs, inputsSchema, Outputs } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlayIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { getInflationAdjustedAmounts } from '../lib/actions'
 
 interface InputFormProps {
   handleSubmitInParent: (outputs: Outputs) => void
