@@ -16,27 +16,52 @@ export default function AboutPage() {
       <H3>Stack</H3>
       <ul className="ml-6 list-disc space-y-2">
         <li>
-          <a href="https://nextjs.org/" className={externalLinkStyle}>
+          <a
+            href="https://nextjs.org/"
+            className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Next.js 15
           </a>
         </li>
         <li>
-          <a href="https://tailwindcss.com/" className={externalLinkStyle}>
+          <a
+            href="https://tailwindcss.com/"
+            className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Tailwind CSS v4
           </a>
         </li>
         <li>
-          <a href="https://ui.shadcn.com/" className={externalLinkStyle}>
+          <a
+            href="https://ui.shadcn.com/"
+            className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Shadcn
           </a>
         </li>
         <li>
-          <a href="https://www.mongodb.com/" className={externalLinkStyle}>
+          <a
+            href="https://www.mongodb.com/"
+            className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             MongoDB
           </a>
         </li>
         <li>
-          <a href="https://vercel.com/" className={externalLinkStyle}>
+          <a
+            href="https://vercel.com/"
+            className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Vercel
           </a>
         </li>
@@ -45,7 +70,12 @@ export default function AboutPage() {
       <Body>
         Historical inflation data is obtained from the Federal Reserve Bank of
         St. Louis (
-        <a href="https://fred.stlouisfed.org/" className={externalLinkStyle}>
+        <a
+          href="https://fred.stlouisfed.org/"
+          className={externalLinkStyle}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           FRED
         </a>
         ) API:
@@ -56,6 +86,8 @@ export default function AboutPage() {
           <a
             href="https://fred.stlouisfed.org/series/CPIAUCSL"
             className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             CPI
           </a>
@@ -66,6 +98,8 @@ export default function AboutPage() {
           <a
             href="https://fred.stlouisfed.org/series/PCEPI"
             className={externalLinkStyle}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             PCE
           </a>
