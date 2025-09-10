@@ -1,0 +1,18 @@
+---
+description: Overview of the project stack
+globs:
+alwaysApply: true
+---
+
+# Stack Overview
+
+- Framework: Next.js (App Router) + TypeScript + React
+- UI: Shadcn + Tailwind CSS
+- Data storage: MongoDB Atlas + Prisma ORM
+- Auth: None
+- Data fetching:
+  - **Server-side:** Next.js Server Actions
+- Data source:
+  - Federal Reserve Bank of St. Louis (FRED) API
+- Deployment: Vercel
+- Use `\src` directory for all app code and use the root for all config.

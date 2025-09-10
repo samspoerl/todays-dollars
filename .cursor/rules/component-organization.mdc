@@ -1,0 +1,58 @@
+---
+description: Component placement strategy: Shadcn -> shared -> route-specific
+globs:
+alwaysApply: true
+---
+
+# Component Organization Rules
+
+## Component Placement Hierarchy
+
+1. **Shadcn UI Components**: Always use components from `src/components/ui/` for standard UI elements (buttons, inputs, dialogs, etc.)
+
+2. **Shared/Reusable Components**: Place components that are used across multiple routes in `src/components/` (outside the ui subdirectory)
+
+3. **Route-Specific Components**: Place one-off components that are only used by a specific route in a `ui/` subdirectory within that route's directory
+
+## Examples
+
+### ✅ Correct Usage
+
+**Shadcn components:**
+```tsx
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+```
+
+**Shared components:**
+```tsx
+// src/components/MarkdownRenderer.tsx
+// src/components/DataTable.tsx
+// src/components/JsonViewer.tsx
+```
+
+**Route-specific components:**
+```tsx
+// src/app/(app)/ui/AddEntryButton.tsx
+// src/app/(app)/ui/EntriesList.tsx
+// src/app/login/ui/CredentialsLogin.tsx
+```
+
+### ❌ Avoid
+
+- Creating custom button components when a Shadcn component exists.
+  - *Note: not all available Shadcn components might be installed in the project. If a basic component (e.g., `button`, `card`, `input`, etc.) is not found in `src/components/ui`, try adding it using the CLI command `npx shadcn@latest add [component]` before creating one.*
+- Placing one-off components in `src/components/` when they're only used by one route
+- Placing shared components in route-specific `ui/` directories
+
+## Import Patterns
+
+- Import Shadcn components using absolute imports with a `@/` prefix from `@/components/ui/[component-name]`.
+- Import shared components using absolute imports with a `@/` prefix from `@/components/[component-name]`.
+- Import route-specific components using relative imports within the route.
+
+## When Creating New Components
+
+1. **Check Shadcn first**: Before creating a new component, check if a suitable Shadcn component exists in `src/components/ui/`
+2. **Assess reusability**: If the component will be used in multiple routes, place it in `src/components/`
+3. **Route-specific**: If the component is only for one route, place it in that route's `ui/` subdirectory

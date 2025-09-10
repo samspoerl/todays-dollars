@@ -1,0 +1,53 @@
+---
+description: Prefer function declarations over arrow function
+globs:
+alwaysApply: true
+---
+
+# Function Declaration Preference for Event Handlers
+
+## Description
+
+Prefer function declarations over arrow function expressions when defining event handlers and other named functions.
+
+## Instructions
+
+- Use `async function handleSubmit(e: React.FormEvent)` instead of `const handleSubmit = async (e: React.FormEvent)`
+- Use this pattern for any named function that serves as a handler or callback
+- Keep arrow functions for inline callbacks and anonymous functions
+
+## Example
+
+### ✅ Preferred
+
+```tsx
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault()
+  // handle form submission
+}
+
+function handleClick() {
+  // handle click
+}
+
+function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // handle change
+}
+```
+
+### ❌ Avoid
+
+```tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  // handle form submission
+}
+
+const handleClick = () => {
+  // handle click
+}
+
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // handle change
+}
+```

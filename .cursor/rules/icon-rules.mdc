@@ -1,0 +1,12 @@
+---
+description: Rules for importing and using icons
+globs:
+alwaysApply: true
+---
+
+# Icon Rules
+
+- Always use Lucide icons
+- Import icons from `'lucide-react'`
+- Always suffix the component with "Icon", e.g., `BotIcon`, `PencilIcon`, etc.
+    - *Lucide provides types both with and without the "Icon" suffic*
