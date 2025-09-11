@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ENUMS
+
+enum InflationMeasure {
+  CPI
+  PCE
+}
+
+// MODELS
+
+// Individual inflation data points
+model Observation {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  inflationMeasure InflationMeasure
+  year             Int // e.g., 2023
+  month            Int // 1-12
+  fredDate         String // Original FRED date string (YYYY-MM-DD) for validation
+  value            Float
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([inflationMeasure, year, month])
+  @@map("observations")
+}
+
+// Metadata about the last data fetch for each measure
+model Metadata {
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  inflationMeasure    InflationMeasure @unique
+  lastObservationDate String // FRED date format: YYYY-MM-DD
+  totalObservations   Int
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("metadata")
+}
+
+// Usage metrics for analytics
+model UsageMetric {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp        DateTime
+  inflationMeasure InflationMeasure
+  duration         Float // Duration in milliseconds
+
+  @@index([timestamp, inflationMeasure])
+  @@map("usage_metrics")
+}

@@ -1,0 +1,22 @@
+---
+description: Standards for React components
+globs:
+alwaysApply: true
+---
+
+# React Component Standards
+
+- Props interface at the top
+- Component as named export
+- Organize the code within React components
+    - Use this specific order:
+        1. Hooks
+        2. Utils
+        3. Event handlers
+        4. Render
+    - Add inline comments to delineate the sections, like this:
+        ```tsx
+        // HOOKS (state, refs, custom hooks, effects)
+        // UTILS (computed values, helpers)  
+        // EVENT HANDLERS (user interactions)
+        ```

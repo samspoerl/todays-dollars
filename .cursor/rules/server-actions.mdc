@@ -1,0 +1,13 @@
+---
+description: Server Action rules
+globs:
+alwaysApply: true
+---
+
+# Server Action Rules
+
+- **Prefer Server Actions over API route handlers**
+- Store all Server Actions in `src/lib/actions/` followed by the relevant resource name.
+- **Always** wrap server actions in the `callServer` function.
+- Server Actions should encapsulate all DB access via Prisma.
+- Import Server Actions using absolute imports from `@/lib/actions`.

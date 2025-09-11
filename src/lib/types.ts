@@ -1,6 +1,15 @@
+import {
+  type InflationMeasure as InflationMeasureEnum,
+  type Metadata,
+  type Observation,
+} from '@prisma/client'
 import { z } from 'zod'
 
+// THEME
+
 export type Theme = 'light' | 'dark'
+
+// SERVER RESPONSE
 
 export type ServerResponse<T> =
   | {
@@ -12,15 +21,30 @@ export type ServerResponse<T> =
       message: string
     }
 
-export interface Observation {
-  date: string
-  value: number
-}
+// AUDIT FIELDS
+
+type AuditFields = 'createdAt' | 'updatedAt'
+
+// OBSERVATIONS
+
+export type ObservationDto = Omit<Observation, AuditFields | 'fredDate'>
+
+export type ObservationCreateDto = Omit<Observation, AuditFields | 'id'>
+
+// INFLATION MEASURE
+
+export type InflationMeasure = InflationMeasureEnum
+
+// METADATA
+
+export type MetadataDto = Metadata
+
+// FORM INPUTS
 
 const currentYear = new Date().getFullYear()
 
 export const inputsSchema = z.object({
-  inflationMeasure: z.enum(['cpi', 'pce']),
+  inflationMeasure: z.enum(['CPI', 'PCE']),
   startAmount: z.coerce.number().positive('Amount must be positive'),
   startYear: z.coerce
     .number()
@@ -29,12 +53,12 @@ export const inputsSchema = z.object({
     .max(currentYear, `Year must be ${currentYear} or earlier`),
 })
 
-export type InflationMeasure = 'cpi' | 'pce'
+export type CalculationInputs = z.infer<typeof inputsSchema>
 
-export type Inputs = z.infer<typeof inputsSchema>
+// CALCULATION RESULT
 
-export interface Outputs {
+export interface CalculationResult {
   startingAmount: number
   year: number
-  observations: Observation[]
+  observations: ObservationDto[]
 }

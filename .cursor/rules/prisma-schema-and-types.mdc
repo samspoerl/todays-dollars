@@ -1,0 +1,107 @@
+---
+description: Rules for defining Prisma schema and TypeScript types
+globs:
+alwaysApply: true
+---
+
+# Prisma Schema and TypeScript Types
+
+## Prisma Schema
+
+- Define the Prisma schema in `prisma/schema.prisma`
+- Separate core fields, relation fields, and audit fields
+- Use MongoDB
+- Always explicitly map the model to a collection name using `@@map()` followed by the model name, pluralized and using lower_snake_case (e.g., `@@map("users")`)
+- Always add `createdAt` and `updatedAt` fields
+- Always set the generator output path to `"src/app/generated/prisma/client"`
+    - *Do not track this in version control*
+
+## TypeScript Types
+
+- Place types in `src/lib/types.ts`
+- Create a type for each model in the schema
+- Use the generated Prisma types as a base
+- Always omit `id` and `userId` in create types
+- Always omit `userId` from update types
+- Always suffix schema types with "Dto"
+  - *This only applies to core resources that exist as models in the Prisma schema; other types don't need this*
+
+**Example of creating types from generated Prisma types:**
+
+```ts
+import { Entry, Notebook, User } from '@prisma/client'
+
+// THEME
+
+export type Theme = 'light' | 'dark'
+
+// AUDIT FIELDS
+
+type AuditFields = 'createdAt' | 'updatedAt'
+
+// ENTRIES
+
+export type EntryDto = Omit<Entry, AuditFields>
+
+export type EntryCreateDto = Omit<EntryDto, 'id' | 'userId'>
+
+export type EntryUpdateDto = Omit<EntryDto, 'userId' | 'notebookId'>
+
+// NOTEBOOKS
+
+export type NotebookDto = Omit<Notebook, AuditFields>
+
+export type NotebookCreateDto = Omit<NotebookDto, 'id' | 'userId'>
+
+export type NotebookUpdateDto = Omit<NotebookDto, 'id' | 'userId'>
+
+// USERS
+
+export type UserDto = Omit<User, AuditFields>
+```
+
+## Prisma Select Types
+
+- For each model, create a constant that defines which fields to include in the Prisma `select` object
+
+**Example:**
+
+```ts
+// These schemas are used in Prisma select statements.
+
+// ENTRIES
+
+export const entrySelect = {
+  id: true,
+  title: true,
+  content: true,
+  tags: true,
+  authoredAt: true,
+  userId: true,
+  notebookId: true,
+}
+
+// NOTEBOOKS
+
+export const notebookSelect = {
+  id: true,
+  name: true,
+  userId: true,
+  isDateOrganized: true,
+}
+
+export const notebookWithEntriesSelect = {
+  ...notebookSelect,
+  entries: {
+    select: entrySelect,
+  },
+}
+
+// USERS
+
+export const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+}
+```

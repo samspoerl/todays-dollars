@@ -1,0 +1,19 @@
+---
+description: Overview of this project/app
+globs:
+alwaysApply: true
+---
+
+# Project Overview
+
+An **inflation calculator** web app called **Today's Dollars**.
+
+## Goal
+
+This app aims to answer the question: "How much is that in today's dollars?" For example: "How much would $100 in 1975 be worth in today's dollars?"
+
+## Data
+
+Historical inflation data is obtained from the Federal Reserve Bank of St. Louis (FRED) API:
+- Consumer Price Index (CPI)
+- Personal Consumption Expenditures Price Index (PCE)
