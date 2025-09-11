@@ -2,7 +2,7 @@ import {
   type InflationMeasure as InflationMeasureEnum,
   type Metadata,
   type Observation,
-} from '@/generated/prisma/client'
+} from '@prisma/client'
 import { z } from 'zod'
 
 // THEME
