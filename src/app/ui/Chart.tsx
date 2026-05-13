@@ -8,7 +8,7 @@ import {
   ChartTooltip,
 } from '@/components/ui/chart'
 import { ObservationDto } from '@/lib/types'
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, LabelList, XAxis } from 'recharts'
 
 import { formatUSD } from '@/lib/utils'
 
@@ -55,7 +55,14 @@ export function Chart({ chartData }: ChartProps) {
         />
         <ChartTooltip content={<CustomTooltip />} />
         <ChartLegend content={<ChartLegendContent />} />
-        <Area dataKey="value" fill="var(--color-value)" radius={4} />
+        <Area dataKey="value" fill="var(--color-value)" radius={4}>
+          <LabelList
+            dataKey="value"
+            position="top"
+            formatter={(v: number) => formatUSD(v, 0)}
+            className="fill-foreground text-[10px] font-medium"
+          />
+        </Area>
       </AreaChart>
     </ChartContainer>
   )
