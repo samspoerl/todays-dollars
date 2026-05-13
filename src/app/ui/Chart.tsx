@@ -12,19 +12,19 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 
 import { formatUSD } from '@/lib/utils'
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload || !payload.length) return null
 
-  // The date comes from payload[0].payload.date (this is the x-axis value)
-  const dateStr = payload[0].payload.date
-
-  // The value comes from payload[0].value (this is the y-axis value)
+  const { year, month } = payload[0].payload
+  const dateLabel = `${MONTHS[month - 1]} ${year}`
   const value = payload[0].value
   const formattedValue = formatUSD(value, 2)
 
   return (
     <div className="bg-background rounded-lg border p-2 shadow-md">
-      <p className="text-xs font-medium">{dateStr}</p>
+      <p className="text-xs font-medium">{dateLabel}</p>
       <p className="text-xs font-semibold">{formattedValue}</p>
     </div>
   )
@@ -47,11 +47,11 @@ export function Chart({ chartData }: ChartProps) {
       <AreaChart accessibilityLayer data={chartData}>
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="date"
+          dataKey="year"
           tickLine={false}
           tickMargin={10}
           axisLine={false}
-          tickFormatter={(dateStr) => dateStr.slice(0, 4)}
+          tickFormatter={(year) => String(year)}
         />
         <ChartTooltip content={<CustomTooltip />} />
         <ChartLegend content={<ChartLegendContent />} />
