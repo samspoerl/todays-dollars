@@ -1,5 +1,4 @@
 {
   "js/ts.preferences.importModuleSpecifier": "non-relative",
-  "js/ts.preferences.autoImportFileExcludePatterns": ["@radix-ui/*"],
-  "prisma.pinToPrisma6": true
+  "js/ts.preferences.autoImportFileExcludePatterns": ["@radix-ui/*"]
 }

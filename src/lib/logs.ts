@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma'
 import { type InflationMeasure } from '@/lib/types'
 
-export default async function logMetrics({
+export default async function logTelemetry({
   timestamp,
   duration,
   inflationMeasure,
@@ -13,7 +13,7 @@ export default async function logMetrics({
   inflationMeasure: InflationMeasure
 }) {
   try {
-    await prisma.usageMetric.create({
+    await prisma.telemetry.create({
       data: {
         timestamp,
         inflationMeasure,
@@ -21,6 +21,6 @@ export default async function logMetrics({
       },
     })
   } catch (error) {
-    console.error('Error logging metrics')
+    console.error('Error logging telemetry')
   }
 }

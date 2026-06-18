@@ -1,7 +1,7 @@
 'use server'
 
 import { getInflationData } from '@/lib/inflation-data'
-import logMetrics from '@/lib/logs'
+import logTelemetry from '@/lib/logs'
 import {
   type CalculationInputs,
   type ObservationDto,
@@ -53,7 +53,7 @@ export async function getInflationAdjustedAmounts({
   // Use 'after' to log metrics after returning response to client
   const timestamp = new Date()
   const duration = Date.now() - start
-  after(logMetrics({ timestamp, duration, inflationMeasure }))
+  after(logTelemetry({ timestamp, duration, inflationMeasure }))
 
   return {
     ok: true,
