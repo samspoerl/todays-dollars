@@ -43,3 +43,6 @@ next-env.d.ts
 
 # generated prisma types
 src/generated/prisma
+
+# local backups
+/backups
