@@ -14,12 +14,17 @@ import { formatUSD } from '@/lib/utils'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipEntry {
+  value?: number
+  payload?: { year: number; month: number }
+}
+
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipEntry[] }) => {
   if (!active || !payload || !payload.length) return null
 
-  const { year, month } = payload[0].payload
+  const { year, month } = payload[0].payload!
   const dateLabel = `${MONTHS[month - 1]} ${year}`
-  const value = payload[0].value
+  const value = payload[0].value ?? 0
   const formattedValue = formatUSD(value, 2)
 
   return (
