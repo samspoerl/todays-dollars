@@ -104,6 +104,41 @@ Custom components are acceptable only when a shadcn primitive is genuinely insuf
 - **Imports:** Non-relative path aliases (`@/lib/...`, `@/components/...`)
 - **Radix UI:** Do not import from `radix-ui` directly; use wrappers in `src/components/ui/`
 
+## Scripts
+
+All scripts are run via `npm run <script>`.
+
+**Dev server**
+
+| Script | Description |
+|--------|-------------|
+| `dev` | Start the Next.js dev server |
+| `dev-https` | Start with experimental HTTPS (useful for OAuth testing) |
+| `build` | Production build |
+| `start` | Start the production server |
+
+**Code quality**
+
+| Script | Description |
+|--------|-------------|
+| `lint` | Run ESLint |
+| `typecheck` | Type-check without emitting (`tsc --noEmit`) |
+| `format` | Auto-format with Prettier |
+| `format:check` | Check formatting without writing |
+
+**Database & setup**
+
+| Script | Description |
+|--------|-------------|
+| `agent:setup` | One-shot setup: copy env, start DB, run migrations, generate client |
+| `db:up` | Start the Postgres container via Docker Compose |
+| `db:down` | Stop and remove the Postgres container (destructive — drops volumes) |
+| `db:reset` | `db:down` + `db:up` + `prisma:bootstrap` — full wipe and restart |
+| `copy-env` | Safely copy `.env.docker` → `.env` without overwriting an existing file |
+| `prisma:deploy` | Apply pending migrations |
+| `prisma:generate` | Regenerate the Prisma client |
+| `prisma:bootstrap` | `deploy` + `generate` in sequence |
+
 ## Git Conventions
 
 Use **Conventional Commits** (<https://www.conventionalcommits.org>) for all commits, branch names, and PR titles.
