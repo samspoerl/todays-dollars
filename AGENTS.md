@@ -63,7 +63,7 @@ Mutations flow: Client Component → Server Action → Prisma / FRED API.
 
 ### Server Actions
 
-Live in `src/lib/actions/[resource].ts`. They are plain `'use server'` functions that return `ServerResponse<T>`:
+Prefer Server Actions over API route handlers. Live in `src/lib/actions/[resource].ts`. They are plain `'use server'` functions that return `ServerResponse<T>`:
 
 ```ts
 type ServerResponse<T> =
@@ -97,6 +97,83 @@ Always prefer a shadcn primitive over a custom implementation — run `shadcn ad
 Currently installed: button, card, chart, form, input, label, navigation-menu, radio-group, sonner, tooltip
 
 Custom components are acceptable only when a shadcn primitive is genuinely insufficient or doesn't exist.
+
+## Component Standards
+
+### Placement hierarchy
+
+1. **`src/components/ui/`** — shadcn primitives only
+2. **`src/components/`** — shared components used across multiple pages
+3. **`src/app/ui/`** — components used only by the home page (this project's only route)
+
+### Structure
+
+- Props interface at the top of the file
+- Named exports (not default for components)
+- Order within a component:
+  1. Hooks (state, refs, custom hooks, effects)
+  2. Utils (computed values, helpers)
+  3. Event handlers (user interactions)
+  4. Render (return)
+- Use inline comments to delineate sections:
+  ```tsx
+  // HOOKS
+  // UTILS
+  // EVENT HANDLERS
+  ```
+
+### Function declarations
+
+Prefer function declarations over arrow functions for named handlers:
+
+```tsx
+// ✅
+async function handleSubmit(values: FormValues) { ... }
+
+// ❌
+const handleSubmit = async (values: FormValues) => { ... }
+```
+
+Keep arrow functions for inline callbacks and anonymous functions.
+
+### Icons
+
+Always use Lucide icons (`lucide-react`). Always suffix the import name with `Icon`:
+
+```tsx
+import { PlayIcon, PencilIcon } from 'lucide-react'
+```
+
+## TypeScript Conventions
+
+### DTO types
+
+Types live in `src/lib/types.ts`. Build them from generated Prisma types:
+
+```ts
+type AuditFields = 'createdAt' | 'updatedAt'
+
+export type ObservationDto = Omit<Observation, AuditFields | 'fredDate'>
+export type ObservationCreateDto = Omit<Observation, AuditFields | 'id'>
+```
+
+- Suffix resource types with `Dto`
+- Define a shared `AuditFields` type alias and omit it from all Dtos
+- Omit `id` from create types
+
+### Prisma select schemas
+
+Define select objects in `src/lib/select-schemas.ts` and reuse them in Prisma queries:
+
+```ts
+export const observationSelect = {
+  id: true,
+  inflationMeasure: true,
+  year: true,
+  month: true,
+  value: true,
+}
+```
 
 ## Code Style
 
