@@ -1,6 +1,5 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Must specify package ecosystem ("npm") and package manifest location ("/").
+# The rest is optional. See documentation for all configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
@@ -11,9 +10,26 @@ updates:
       interval: "daily"
       time: "06:00"
       timezone: America/New_York
+    open-pull-requests-limit: 10
     commit-message:
       prefix: "chore"
       include: scope
     cooldown:
-      default-days: 3
       semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      next:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/client"

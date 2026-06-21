@@ -1,24 +1,19 @@
-name: Dependabot auto-merge
+name: Dependabot scheduled auto-merge
 
 on:
-  pull_request:
+  schedule:
+    - cron: '0 14 * * *'  # 14:00 UTC — ~10:00 ET (EDT) / 9:00 ET (EST)
+  workflow_dispatch:       # allow manual runs for testing
 
-permissions:
-  contents: write
-  pull-requests: write
+concurrency:
+  group: dependabot-auto-merge
+  cancel-in-progress: false
 
 jobs:
-  dependabot:
-    runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    steps:
-      - name: Fetch Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v3
-
-      - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        run: gh pr merge --auto --merge "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  auto-merge:
+    uses: samspoerl/workflows/.github/workflows/dependabot-auto-merge2.yml@main
+    secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
+      deployments: read
