@@ -8,18 +8,18 @@ import {
   ChartTooltip,
 } from '@/components/ui/chart'
 import { ObservationDto } from '@/lib/types'
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, TooltipProps, XAxis } from 'recharts'
 
 import { formatUSD } from '@/lib/utils'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   if (!active || !payload || !payload.length) return null
 
   const { year, month } = payload[0].payload
   const dateLabel = `${MONTHS[month - 1]} ${year}`
-  const value = payload[0].value
+  const value = payload[0].value ?? 0
   const formattedValue = formatUSD(value, 2)
 
   return (
