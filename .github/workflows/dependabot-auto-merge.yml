@@ -23,11 +23,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.ref != 'refs/heads/main' && 'true' || 'false' }}
         run: |
           set -uo pipefail
           # GitHub Actions runs this with `bash -e` by default; disable errexit
           # so a single failing API call doesn't abort the whole loop.
           set +e
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::Dry run mode — no PRs will be merged (branch is not main)"
+          fi
 
           prs=$(gh pr list \
             --repo "$REPO" \
@@ -89,9 +94,13 @@ jobs:
 
             case "$state" in
               success)
-                echo "Merging PR #$number"
-                gh pr merge --repo "$REPO" --merge "$number" \
-                  || echo "Merge failed for PR #$number"
+                if [ "$DRY_RUN" = "true" ]; then
+                  echo "Would merge PR #$number (dry run)"
+                else
+                  echo "Merging PR #$number"
+                  gh pr merge --repo "$REPO" --merge "$number" \
+                    || echo "Merge failed for PR #$number"
+                fi
                 ;;
               failure|error)
                 echo "Deployment failed — leaving open for manual review"
