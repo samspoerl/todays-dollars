@@ -16,7 +16,7 @@ export function GitHubLink({ href }: GitHubLinkProps) {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button asChild variant="ghost">
-          <Link href={href}>
+          <Link href={href} target="_blank" rel="noopener noreferrer">
             <SiGithub className="size-5 sm:size-4" />
           </Link>
         </Button>
