@@ -1,24 +1,111 @@
-name: Dependabot auto-merge
+name: Dependabot scheduled auto-merge
 
 on:
-  pull_request:
+  schedule:
+    - cron: '0 14 * * *'  # 14:00 UTC — ~10:00 ET (EDT) / 9:00 ET (EST)
+  workflow_dispatch:       # allow manual runs for testing
 
 permissions:
   contents: write
   pull-requests: write
+  deployments: read
+
+concurrency:
+  group: dependabot-auto-merge
+  cancel-in-progress: false
 
 jobs:
-  dependabot:
+  merge-passing-dependabot-prs:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    timeout-minutes: 5
     steps:
-      - name: Fetch Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v3
-
-      - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        run: gh pr merge --auto --merge "$PR_URL"
+      - name: Merge Dependabot PRs that passed Vercel Preview
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # GitHub Actions runs this with `bash -e` by default; disable errexit
+          # so a single failing API call doesn't abort the whole loop.
+          set +e
+
+          prs=$(gh pr list \
+            --repo "$REPO" \
+            --author 'app/dependabot' \
+            --state open \
+            --json number,title,headRefOid)
+
+          echo "$prs" | jq -c '.[]' | while read -r pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            title=$(echo  "$pr" | jq -r '.title')
+            sha=$(echo    "$pr" | jq -r '.headRefOid')
+
+            echo "::group::PR #$number — $title"
+
+            # Match "from X to Y" where X and Y are dotted version strings.
+            if ! [[ "$title" =~ from[[:space:]]+([0-9]+(\.[0-9]+)*)[[:space:]]+to[[:space:]]+([0-9]+(\.[0-9]+)*) ]]; then
+              echo "Could not parse version bump from title — skipping"
+              echo "::endgroup::"
+              continue
+            fi
+
+            from_version="${BASH_REMATCH[1]}"
+            to_version="${BASH_REMATCH[3]}"
+            from_major="${from_version%%.*}"
+            to_major="${to_version%%.*}"
+
+            if [ "$from_major" != "$to_major" ]; then
+              echo "Major bump ($from_version → $to_version) — skipping"
+              echo "::endgroup::"
+              continue
+            fi
+
+            # In semver, 0.x.y minor bumps are treated as breaking.
+            if [ "$from_major" = "0" ]; then
+              from_minor=$(echo "$from_version" | cut -d. -f2)
+              to_minor=$(echo   "$to_version"   | cut -d. -f2)
+              if [ "${from_minor:-0}" != "${to_minor:-0}" ]; then
+                echo "0.x minor bump ($from_version → $to_version) treated as breaking — skipping"
+                echo "::endgroup::"
+                continue
+              fi
+            fi
+
+            # Find the most recent Preview deployment for this SHA created by Vercel.
+            deployment_id=$(gh api "repos/$REPO/deployments?sha=$sha" \
+              --jq '[.[] | select(.environment == "Preview" and .creator.login == "vercel[bot]")]
+                    | sort_by(.created_at) | reverse | .[0].id // empty')
+
+            if [ -z "$deployment_id" ]; then
+              state="missing"
+            else
+              # Latest status for that deployment (GitHub returns newest-first).
+              state=$(gh api "repos/$REPO/deployments/$deployment_id/statuses" \
+                --jq '.[0].state // empty')
+              state="${state:-missing}"
+            fi
+
+            echo "Vercel Preview deployment state: $state (deployment_id=${deployment_id:-none})"
+
+            case "$state" in
+              success)
+                echo "Merging PR #$number"
+                gh pr merge --repo "$REPO" --merge "$number" \
+                  || echo "Merge failed for PR #$number"
+                ;;
+              failure|error)
+                echo "Deployment failed — leaving open for manual review"
+                ;;
+              pending|queued|in_progress)
+                echo "Still deploying — will retry next scheduled run"
+                ;;
+              inactive)
+                echo "Deployment superseded — leaving open"
+                ;;
+              *)
+                echo "No Vercel Preview deployment yet — leaving open"
+                ;;
+            esac
+
+            echo "::endgroup::"
+          done
