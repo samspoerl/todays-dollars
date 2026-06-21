@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.tsx"
+---
+
 # Component Standards
 
 ## Placement hierarchy
