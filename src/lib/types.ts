@@ -5,10 +5,6 @@ import {
 } from '@/generated/prisma/client'
 import { z } from 'zod'
 
-// THEME
-
-export type Theme = 'light' | 'dark'
-
 // SERVER RESPONSE
 
 export type ServerResponse<T> =
