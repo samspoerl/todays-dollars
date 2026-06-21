@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
 import { CalculationInputs, CalculationResult, inputsSchema } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { Resolver } from 'react-hook-form'
 import { PlayIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -26,7 +27,7 @@ interface InputFormProps {
 
 export function InputForm({ handleSubmitInParent }: InputFormProps) {
   const form = useForm<CalculationInputs>({
-    resolver: zodResolver(inputsSchema),
+    resolver: zodResolver(inputsSchema) as unknown as Resolver<CalculationInputs>,
     defaultValues: {
       inflationMeasure: 'CPI',
       startAmount: 100,
