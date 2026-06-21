@@ -4,9 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev-https": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "agent:setup": "npm run copy-env && npm run db:up && npm run prisma:bootstrap",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down -v",
+    "db:reset": "npm run db:down && npm run db:up && npm run prisma:bootstrap",
+    "copy-env": "tsx scripts/safe-copy-env.ts",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:generate": "prisma generate",
+    "prisma:bootstrap": "prisma migrate deploy && prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -47,6 +59,7 @@
     "prettier-plugin-tailwindcss": "^0.8.0",
     "prisma": "^7.8.0",
     "tailwindcss": "^4.0.8",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   },
   "overrides": {
