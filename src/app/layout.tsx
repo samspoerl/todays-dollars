@@ -1,11 +1,9 @@
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { ThemeProvider } from '@/contexts/ThemeContext'
-import { type Theme } from '@/lib/types'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
+import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
-import { cookies } from 'next/headers'
 import './globals.css'
 import { AppContent } from './ui/AppContent'
 import { AppFooter } from './ui/AppFooter'
@@ -34,25 +32,22 @@ export const metadata: Metadata = {
   ],
 }
 
-async function getInitialTheme(): Promise<Theme> {
-  const cookieStore = await cookies()
-  const theme = cookieStore.get('theme')?.value
-  return theme === 'dark' ? 'dark' : 'light'
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const theme = await getInitialTheme()
-
   return (
-    <html lang="en" className={theme === 'dark' ? 'dark' : ''}>
-      <body className={`${inter.className} antialiased`}>
-        <ThemeProvider initialTheme={theme}>
+    <html lang="en" className={inter.className} suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <TooltipProvider>
-            <div className="flex min-h-screen flex-col">
+            <div className="flex h-svh flex-col">
               <AppHeader />
               <AppContent>{children}</AppContent>
               <AppFooter />

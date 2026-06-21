@@ -6,25 +6,46 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useTheme } from '@/contexts/ThemeContext'
 import { MoonIcon, SunIcon } from 'lucide-react'
+import { useTheme } from 'next-themes'
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
+  const { setTheme } = useTheme()
 
+  // next-themes injects a script that adds the `.dark` class to the `<html>` element
+  // before the page loads, so CSS `dark:` variants take effect immediately. Without this,
+  // we'd need to track mount state to avoid rendering the wrong icon before hydration.
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" onClick={toggleTheme}>
-          {theme === 'dark' ? (
-            <MoonIcon className="size-5 sm:size-4" />
-          ) : (
-            <SunIcon className="size-5 sm:size-4" />
-          )}
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Toggle theme</TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full dark:hidden"
+            onClick={() => setTheme('dark')}
+          >
+            <SunIcon />
+            <span className="sr-only">Toggle dark mode</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Toggle dark mode</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden rounded-full dark:inline-flex"
+            onClick={() => setTheme('light')}
+          >
+            <MoonIcon />
+            <span className="sr-only">Toggle light mode</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Toggle light mode</TooltipContent>
+      </Tooltip>
+    </>
   )
 }
