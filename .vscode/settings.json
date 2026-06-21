@@ -1,4 +1,4 @@
 {
   "js/ts.preferences.importModuleSpecifier": "non-relative",
-  "js/ts.preferences.autoImportFileExcludePatterns": ["@radix-ui/*"]
+  "js/ts.preferences.autoImportFileExcludePatterns": ["radix-ui"]
 }

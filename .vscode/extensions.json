@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+    "github.vscode-github-actions",
+    "databricks.neon-local-connect",
+    "redhat.vscode-yaml"
+  ]
+}
