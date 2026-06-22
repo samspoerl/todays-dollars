@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
+import { INFLATION_MEASURE_COOKIE } from '@/lib/constants'
 import {
   CalculationInputs,
   CalculationResult,
@@ -26,11 +27,10 @@ import type { Resolver } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-const COOKIE_NAME = 'inflationMeasure'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 function setMeasureCookie(measure: InflationMeasure) {
-  document.cookie = `${COOKIE_NAME}=${measure}; max-age=${COOKIE_MAX_AGE}; path=/; samesite=lax`
+  document.cookie = `${INFLATION_MEASURE_COOKIE}=${measure}; max-age=${COOKIE_MAX_AGE}; path=/; samesite=lax`
 }
 
 interface InputFormProps {
