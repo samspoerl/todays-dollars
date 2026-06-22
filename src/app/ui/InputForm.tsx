@@ -13,13 +13,27 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
-import { CalculationInputs, CalculationResult, inputsSchema } from '@/lib/types'
+import {
+  CalculationInputs,
+  CalculationResult,
+  InflationMeasure,
+  inputsSchema,
+} from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Resolver } from 'react-hook-form'
 import { PlayIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+
+const STORAGE_KEY = 'inflationMeasure'
+const DEFAULT_MEASURE: InflationMeasure = 'CPI'
+
+function getStoredMeasure(): InflationMeasure {
+  if (typeof window === 'undefined') return DEFAULT_MEASURE
+  const stored = localStorage.getItem(STORAGE_KEY)
+  return stored === 'CPI' || stored === 'PCE' ? stored : DEFAULT_MEASURE
+}
 
 interface InputFormProps {
   handleSubmitInParent: (outputs: CalculationResult) => void
@@ -29,13 +43,26 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
   const form = useForm<CalculationInputs>({
     resolver: zodResolver(inputsSchema) as unknown as Resolver<CalculationInputs>,
     defaultValues: {
-      inflationMeasure: 'CPI',
+      inflationMeasure: DEFAULT_MEASURE,
       startAmount: 100,
       startYear: 1975,
     },
   })
 
   const [isLoading, setIsLoading] = useState(false)
+
+  // HOOKS
+  useEffect(() => {
+    const stored = getStoredMeasure()
+    if (stored !== DEFAULT_MEASURE) {
+      form.setValue('inflationMeasure', stored)
+    }
+  }, [form])
+
+  const watchedMeasure = form.watch('inflationMeasure')
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, watchedMeasure)
+  }, [watchedMeasure])
 
   async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
@@ -72,7 +99,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-row"
                 >
                   <FormItem className="flex items-center gap-2">
