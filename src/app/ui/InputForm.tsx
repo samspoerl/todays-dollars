@@ -13,23 +13,41 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
-import { CalculationInputs, CalculationResult, inputsSchema } from '@/lib/types'
+import { INFLATION_MEASURE_COOKIE } from '@/lib/constants'
+import {
+  CalculationInputs,
+  CalculationResult,
+  InflationMeasure,
+  inputsSchema,
+} from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { Resolver } from 'react-hook-form'
 import { PlayIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { Resolver } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
+
+function setMeasureCookie(measure: InflationMeasure) {
+  document.cookie = `${INFLATION_MEASURE_COOKIE}=${measure}; max-age=${COOKIE_MAX_AGE}; path=/; samesite=lax`
+}
+
 interface InputFormProps {
+  initialMeasure: InflationMeasure
   handleSubmitInParent: (outputs: CalculationResult) => void
 }
 
-export function InputForm({ handleSubmitInParent }: InputFormProps) {
+export function InputForm({
+  initialMeasure,
+  handleSubmitInParent,
+}: InputFormProps) {
   const form = useForm<CalculationInputs>({
-    resolver: zodResolver(inputsSchema) as unknown as Resolver<CalculationInputs>,
+    resolver: zodResolver(
+      inputsSchema
+    ) as unknown as Resolver<CalculationInputs>,
     defaultValues: {
-      inflationMeasure: 'CPI',
+      inflationMeasure: initialMeasure,
       startAmount: 100,
       startYear: 1975,
     },
@@ -37,6 +55,13 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
 
   const [isLoading, setIsLoading] = useState(false)
 
+  // HOOKS
+  const watchedMeasure = form.watch('inflationMeasure')
+  useEffect(() => {
+    setMeasureCookie(watchedMeasure)
+  }, [watchedMeasure])
+
+  // EVENT HANDLERS
   async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
     try {
@@ -72,7 +97,7 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-row"
                 >
                   <FormItem className="flex items-center gap-2">
