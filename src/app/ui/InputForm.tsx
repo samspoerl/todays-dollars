@@ -20,30 +20,34 @@ import {
   inputsSchema,
 } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { Resolver } from 'react-hook-form'
 import { PlayIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import type { Resolver } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-const STORAGE_KEY = 'inflationMeasure'
-const DEFAULT_MEASURE: InflationMeasure = 'CPI'
+const COOKIE_NAME = 'inflationMeasure'
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
-function getStoredMeasure(): InflationMeasure {
-  if (typeof window === 'undefined') return DEFAULT_MEASURE
-  const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'CPI' || stored === 'PCE' ? stored : DEFAULT_MEASURE
+function setMeasureCookie(measure: InflationMeasure) {
+  document.cookie = `${COOKIE_NAME}=${measure}; max-age=${COOKIE_MAX_AGE}; path=/; samesite=lax`
 }
 
 interface InputFormProps {
+  initialMeasure: InflationMeasure
   handleSubmitInParent: (outputs: CalculationResult) => void
 }
 
-export function InputForm({ handleSubmitInParent }: InputFormProps) {
+export function InputForm({
+  initialMeasure,
+  handleSubmitInParent,
+}: InputFormProps) {
   const form = useForm<CalculationInputs>({
-    resolver: zodResolver(inputsSchema) as unknown as Resolver<CalculationInputs>,
+    resolver: zodResolver(
+      inputsSchema
+    ) as unknown as Resolver<CalculationInputs>,
     defaultValues: {
-      inflationMeasure: DEFAULT_MEASURE,
+      inflationMeasure: initialMeasure,
       startAmount: 100,
       startYear: 1975,
     },
@@ -52,18 +56,12 @@ export function InputForm({ handleSubmitInParent }: InputFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   // HOOKS
-  useEffect(() => {
-    const stored = getStoredMeasure()
-    if (stored !== DEFAULT_MEASURE) {
-      form.setValue('inflationMeasure', stored)
-    }
-  }, [form])
-
   const watchedMeasure = form.watch('inflationMeasure')
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, watchedMeasure)
+    setMeasureCookie(watchedMeasure)
   }, [watchedMeasure])
 
+  // EVENT HANDLERS
   async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
     try {
