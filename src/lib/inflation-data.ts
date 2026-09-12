@@ -1,5 +1,4 @@
 // This module fetches the inflation data (observations) from cache or FRED (if stale).
-'use server'
 
 import { callFred } from '@/lib/fred/fred-api'
 import prisma from '@/lib/prisma'
