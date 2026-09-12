@@ -6,6 +6,9 @@ export default function PageWrapper({
   ...props
 }: React.ComponentProps<'div'>) {
   return (
-    <div className={cn('mx-auto flex flex-col max-w-3xl grow gap-6', className)} {...props} />
+    <div
+      className={cn('mx-auto flex max-w-3xl grow flex-col gap-6', className)}
+      {...props}
+    />
   )
 }

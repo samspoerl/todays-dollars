@@ -12,14 +12,33 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 
 import { formatUSD } from '@/lib/utils'
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
 
 interface TooltipEntry {
   value?: number
   payload?: { year: number; month: number }
 }
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipEntry[] }) => {
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: TooltipEntry[]
+}) => {
   if (!active || !payload || !payload.length) return null
 
   const { year, month } = payload[0].payload!

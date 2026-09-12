@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils'
 import type React from 'react'
 
-interface TypographyProps
-  extends React.HTMLAttributes<HTMLHeadingElement | HTMLParagraphElement> {
+interface TypographyProps extends React.HTMLAttributes<
+  HTMLHeadingElement | HTMLParagraphElement
+> {
   children: React.ReactNode
   className?: string
 }
@@ -93,10 +94,7 @@ export function H6({ children, className, ...props }: TypographyProps) {
 
 export function Body({ children, className, ...props }: TypographyProps) {
   return (
-    <p
-      className={cn('leading-7', className)}
-      {...props}
-    >
+    <p className={cn('leading-7', className)} {...props}>
       {children}
     </p>
   )
