@@ -7,14 +7,21 @@
     "dev-https": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
+    "generate": "prisma generate && next typegen",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "ci": "npm run generate && npm run typecheck && npm run test && npm run lint && npm run format:check",
     "agent:setup": "npm run copy-env && npm run db:up && npm run prisma:bootstrap",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down -v",
     "db:reset": "npm run db:down && npm run db:up && npm run prisma:bootstrap",
+    "db:test:up": "docker compose up -d --wait db-test",
+    "db:test:down": "docker compose rm -sf db-test",
     "copy-env": "tsx scripts/safe-copy-env.ts",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
@@ -60,7 +67,8 @@
     "prisma": "^7.9.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
   },
   "overrides": {
     "react-is": "^19.0.0"

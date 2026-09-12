@@ -1,0 +1,176 @@
+name: CI
+
+# Catches regressions before they reach main: `tsc --noEmit`, the Vitest unit
+# suite, eslint, a prettier check, and the integration suite against a real
+# Postgres and the real FRED API. The production build and `prisma migrate
+# deploy` are Vercel's job, so neither runs here. `npm run ci` runs the
+# non-database checks locally.
+on:
+  pull_request:
+  # Branch work is already checked on its PR, so the push trigger covers only
+  # main — the merge commit, or a direct push. Without the branch filter every
+  # PR commit would be checked twice, once per event.
+  push:
+    branches: [main]
+
+# One in-flight run per branch. A superseded PR run is cancelled since its
+# result is already stale; runs on main are left to finish.
+#
+# This also keeps the FRED request rate predictable: without it, pushing three
+# commits in a minute would have three integration jobs fetching the same
+# series at once against one rate-limited key.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Read-only, and deliberately so: nothing here writes back to the repository.
+# A formatting problem is reported rather than fixed and pushed (see the last
+# step of `checks`), which keeps the token that installs and runs repo code —
+# including any dependency's postinstall script — unable to commit anything.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The Prisma client and next-env.d.ts / .next/types are gitignored and
+      # written by commands that don't run here, so without this step tsc and
+      # eslint report failures that only exist on the runner — and prettier's
+      # organize-imports plugin, which drives the TypeScript language service,
+      # sees different imports than it does locally.
+      #
+      # npm 11 blocks dependency install scripts by default, so
+      # `@prisma/engines`' postinstall does not run on `npm ci`. That is fine:
+      # `prisma generate` does not need it.
+      - name: Generate Prisma client and Next.js types
+        run: npm run generate
+
+      # Ordered so the fastest, most fundamental failure surfaces first: a step
+      # failure ends the job, so time-to-red is the ordering criterion. tsc is
+      # quicker than eslint, and a type error is the more basic thing to be
+      # wrong.
+      - name: Type check
+        run: npm run typecheck
+
+      # Unit tests only (`test/unit/**`). They need neither a database nor any
+      # of the app's env vars — the FRED specs here stub `fetch`, and the
+      # harness specs only read and restore `process.env`.
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      # Warn, don't fail: `npm run format` fixes it in one command, and fixing
+      # it here instead would mean giving this job write access. It can't fail
+      # the run, so `!cancelled()` lets it report even after a red step above.
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: |
+          if output=$(npm run format:check 2>&1); then
+            echo "$output"
+            exit 0
+          fi
+
+          echo "$output"
+
+          # prettier lists each unformatted file on its own `[warn] path` line,
+          # colorized — the package manager hands the child a FORCE_COLOR of its
+          # own — so the escape codes are stripped before parsing.
+          files=$(echo "$output" \
+            | sed 's/\x1b\[[0-9;]*m//g' \
+            | sed -n 's/^\[warn\] \(.*\)$/\1/p' \
+            | grep -v 'Code style issues' || true)
+          count=$(echo "$files" | grep -c . || true)
+
+          echo "::warning title=Formatting::$count file(s) are not formatted. Run \`npm run format\` to fix."
+
+          {
+            echo '### Formatting'
+            echo
+            echo "$count file(s) need prettier. Run \`npm run format\` and commit the result."
+            echo
+            echo '```'
+            echo "$files"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # A separate job, not extra steps on `checks`: this one needs a database and
+    # takes time to start one, and a type error should still go red in seconds.
+    # They run in parallel.
+    services:
+      postgres:
+        # Keep in step with the `db-test` service in docker-compose.yml — same
+        # image tag, same credentials, same database name.
+        # `vitest.integration.config.mts` hardcodes a connection string that has
+        # to match both.
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: todays_dollars_test
+        ports:
+          - '5433:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres -d todays_dollars_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      # No DATABASE_URL / DIRECT_URL / DATABASE_ADAPTER in this job's env,
+      # deliberately. The suite supplies its own hardcoded local values and
+      # `test/integration/support/guard.ts` refuses anything else, so setting
+      # them here would only create a way for the wrong one to be set.
+      #
+      # The FRED key is the opposite case: it cannot be hardcoded, so it comes
+      # from repository secrets. A fork or Dependabot PR cannot read those,
+      # which leaves it empty — and the FRED specs then skip via
+      # `hasFredCredentials()` rather than failing. The database specs still
+      # run.
+      #
+      # `FRED_TEST_API_KEY` rather than `FRED_API_KEY`: the suite makes real
+      # requests against a key with a 120/minute limit, so it uses a key
+      # separate from the one Vercel gives production. The config prefers this
+      # name and falls back to `FRED_API_KEY`, so a developer with only one key
+      # still gets a running suite locally.
+      - name: Integration tests
+        run: npm run test:integration
+        env:
+          FRED_TEST_API_KEY: ${{ secrets.FRED_TEST_API_KEY }}
