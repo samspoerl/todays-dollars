@@ -98,7 +98,7 @@ jobs:
                   echo "Would merge PR #$number (dry run)"
                 else
                   echo "Merging PR #$number"
-                  gh pr merge --repo "$REPO" --merge "$number" \
+                  gh pr merge --repo "$REPO" --squash "$number" \
                     || echo "Merge failed for PR #$number"
                 fi
                 ;;
