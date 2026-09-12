@@ -1,7 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 # Today's Dollars
@@ -25,7 +27,7 @@ A public inflation calculator that answers the question: "How much is that in to
 prisma/                  # Prisma schema and migrations
 src/
   app/                   # Next.js App Router
-    ui/                  # App-level UI components (AppHeader, AppFooter, AppContent, 
+    ui/                  # App-level UI components (AppHeader, AppFooter, AppContent,
     |                    #   Chart, InputForm, ThemeToggle, GitHubLink)
     about/               # About page
     page.tsx             # Home page (inflation calculator)
@@ -66,9 +68,7 @@ Mutations flow: Client Component → Server Action → Prisma / FRED API.
 Prefer Server Actions over API route handlers. Live in `src/lib/actions/[resource].ts`. They are plain `'use server'` functions that return `ServerResponse<T>`:
 
 ```ts
-type ServerResponse<T> =
-  | { ok: true; data: T }
-  | { ok: false; message: string }
+type ServerResponse<T> = { ok: true; data: T } | { ok: false; message: string }
 ```
 
 Defined in `src/lib/types.ts`. There are no authenticated wrappers — all actions are public.
@@ -110,34 +110,34 @@ All scripts are run via `npm run <script>`.
 
 **Dev server**
 
-| Script | Description |
-|--------|-------------|
-| `dev` | Start the Next.js dev server |
+| Script      | Description                                              |
+| ----------- | -------------------------------------------------------- |
+| `dev`       | Start the Next.js dev server                             |
 | `dev-https` | Start with experimental HTTPS (useful for OAuth testing) |
-| `build` | Production build |
-| `start` | Start the production server |
+| `build`     | Production build                                         |
+| `start`     | Start the production server                              |
 
 **Code quality**
 
-| Script | Description |
-|--------|-------------|
-| `lint` | Run ESLint |
-| `typecheck` | Type-check without emitting (`tsc --noEmit`) |
-| `format` | Auto-format with Prettier |
-| `format:check` | Check formatting without writing |
+| Script         | Description                                  |
+| -------------- | -------------------------------------------- |
+| `lint`         | Run ESLint                                   |
+| `typecheck`    | Type-check without emitting (`tsc --noEmit`) |
+| `format`       | Auto-format with Prettier                    |
+| `format:check` | Check formatting without writing             |
 
 **Database & setup**
 
-| Script | Description |
-|--------|-------------|
-| `agent:setup` | One-shot setup: copy env, start DB, run migrations, generate client |
-| `db:up` | Start the Postgres container via Docker Compose |
-| `db:down` | Stop and remove the Postgres container (destructive — drops volumes) |
-| `db:reset` | `db:down` + `db:up` + `prisma:bootstrap` — full wipe and restart |
-| `copy-env` | Safely copy `.env.docker` → `.env` without overwriting an existing file |
-| `prisma:deploy` | Apply pending migrations |
-| `prisma:generate` | Regenerate the Prisma client |
-| `prisma:bootstrap` | `deploy` + `generate` in sequence |
+| Script             | Description                                                             |
+| ------------------ | ----------------------------------------------------------------------- |
+| `agent:setup`      | One-shot setup: copy env, start DB, run migrations, generate client     |
+| `db:up`            | Start the Postgres container via Docker Compose                         |
+| `db:down`          | Stop and remove the Postgres container (destructive — drops volumes)    |
+| `db:reset`         | `db:down` + `db:up` + `prisma:bootstrap` — full wipe and restart        |
+| `copy-env`         | Safely copy `.env.docker` → `.env` without overwriting an existing file |
+| `prisma:deploy`    | Apply pending migrations                                                |
+| `prisma:generate`  | Regenerate the Prisma client                                            |
+| `prisma:bootstrap` | `deploy` + `generate` in sequence                                       |
 
 ## Git Conventions
 

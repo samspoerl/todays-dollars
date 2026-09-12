@@ -1,8 +1,8 @@
 ---
 paths:
-  - "src/lib/types.ts"
-  - "src/lib/select-schemas.ts"
-  - "prisma/schema.prisma"
+  - 'src/lib/types.ts'
+  - 'src/lib/select-schemas.ts'
+  - 'prisma/schema.prisma'
 ---
 
 # TypeScript Conventions

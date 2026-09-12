@@ -1,6 +1,6 @@
 ---
 paths:
-  - "src/**/*.tsx"
+  - 'src/**/*.tsx'
 ---
 
 # Component Standards

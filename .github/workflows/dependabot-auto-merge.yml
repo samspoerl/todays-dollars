@@ -2,8 +2,8 @@ name: Dependabot scheduled auto-merge
 
 on:
   schedule:
-    - cron: '0 14 * * *'  # 14:00 UTC — ~10:00 ET (EDT) / 9:00 ET (EST)
-  workflow_dispatch:       # allow manual runs for testing
+    - cron: '0 14 * * *' # 14:00 UTC — ~10:00 ET (EDT) / 9:00 ET (EST)
+  workflow_dispatch: # allow manual runs for testing
 
 permissions:
   contents: write
