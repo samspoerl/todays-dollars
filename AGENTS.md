@@ -50,6 +50,10 @@ src/
     types.ts             # Shared types and Zod schemas
     utils.ts             # Utility functions (formatUSD, cn, etc.)
   generated/prisma/      # Generated Prisma client (do not edit)
+test/
+  unit/                  # Pure functions + the integration harness's own guards
+  integration/           # Needs Postgres and the FRED API
+    support/             # guard, db, factories, fred helpers
 ```
 
 ## Environment
@@ -98,6 +102,82 @@ Currently installed: button, card, chart, form, input, label, navigation-menu, r
 
 Custom components are acceptable only when a shadcn primitive is genuinely insufficient or doesn't exist.
 
+## Testing
+
+```bash
+npm run ci               # generate + typecheck + test + lint + format:check
+npm test                 # unit suite
+npm run db:test:up       # local Postgres for the integration suite (port 5433)
+npm run test:integration # integration suite (needs db:test:up)
+```
+
+Suites are split by **what they need to run**, not by what they cover. Unit
+specs need nothing; integration specs need Postgres and a FRED key. The unit
+config's `test/unit/**` glob can never pick up an integration spec. Spec paths
+mirror the `src/` path of what they cover.
+
+### Hard constraints
+
+- **The integration suite TRUNCATEs.** `.env` holds the **development Neon**
+  credentials — production is a separate database and its credentials are not in
+  this repository — so the stake is not irreplaceable data; it is that wiping
+  the shared development database mid-session is a confusing, silent failure.
+  Three independent guards keep the suite on the local container, and they
+  reject _any_ non-local target rather than enumerating known ones:
+  `vitest.integration.config.mts` hardcodes the connection string,
+  `support/guard.ts` re-checks the resolved values before `migrate deploy` and
+  before every reset, and `support/db.ts` asks the connected server who it is
+  (`current_database()`, and `neon.tenant_id` as the anti-target). The database
+  name `todays_dollars_test` is load-bearing in `docker-compose.yml`,
+  `support/guard.ts`, `vitest.integration.config.mts`, and `ci.yml`.
+- **`DATABASE_ADAPTER` must be `pg` for the integration suite.**
+  `src/lib/prisma.ts` picks `PrismaNeon` for any other value, and the Neon
+  driver speaks HTTP to Neon's endpoint rather than Postgres to a host — so a
+  wrong value here is how the URL checks could pass while the client still
+  reached for Neon. Pinned in the config and asserted in the guard.
+- **Never add a FRED request without raising the budget deliberately.** FRED
+  allows 120 requests/minute per key and the suite spends 4 per run (2 in
+  `fred-api.test.ts`, 2 in `inflation-data.test.ts`). `countFredRequest()` in
+  `support/fred.ts` fails loudly past the cap, and the budget table in that
+  file is the record of what is spent where.
+- **FRED error branches belong in the unit suite, not the integration suite.**
+  Provoking a real 429 means exceeding the limit the harness exists to
+  respect, so `test/unit/lib/fred/fred-api.test.ts` stubs `fetch` and covers
+  the branching at no request cost. The integration spec spends its two
+  requests on the one thing a stub cannot establish: that FRED still returns
+  the shape the code reads.
+- **Missing credentials must skip, not fail.** Forks and Dependabot PRs cannot
+  read repository secrets, and an unset secret expands to `''`. FRED specs gate
+  on `describe.skipIf(!hasFredCredentials())`; the database specs still run.
+
+### Known hazards
+
+- **A `.` in a FRED series is not only the first observation.** `pch` units
+  have no change to report for the first month, but FRED also uses `.` for
+  genuine mid-series gaps — CPI currently carries three (1947-01, plus 2025-10
+  and 2025-11). `inflation-data.ts` maps every `.` to `0`, so those months
+  compound as **0% inflation** rather than being interpolated or skipped. That
+  understates cumulative inflation across any range spanning them, and it does
+  not error. The integration spec asserts the contract that actually matters —
+  that `.` is the _only_ non-numeric token FRED sends — because any other
+  (`''`, `NA`, `null`) would become `NaN` and poison every later month.
+- **`fetchAndCacheInflationData` is not transactional.** It `deleteMany`s a
+  measure's observations and then `createMany`s the replacements, with no
+  try/catch. A failure between the two leaves the cache empty rather than
+  stale. (`getCachedObservations` does have a try/catch; the write path does
+  not.)
+- **The compounding in `calculate.ts` has no test.** It is the most valuable
+  logic in the app and is unreachable from either suite: it is inline in a
+  `'use server'` action that calls `after()` from `next/server`, which throws
+  outside a request scope. Same for the FRED→DTO transform and the staleness
+  math inlined in `inflation-data.ts`. Extracting them is the next piece of
+  work; until then the integration suite covers them only indirectly, through
+  a real database and real FRED data.
+- **`inputsSchema`'s upper bound is `new Date().getFullYear()`**, computed at
+  module scope. Specs derive their expectations the same way rather than
+  hardcoding a year, so they cannot catch a mistake in how the bound is
+  _derived_ — only in how it is applied.
+
 ## Code Style
 
 - **Prettier:** `semi: false`, `singleQuote: true`, `printWidth: 80`, `trailingComma: 'es5'`
@@ -119,21 +199,31 @@ All scripts are run via `npm run <script>`.
 
 **Code quality**
 
-| Script         | Description                                  |
-| -------------- | -------------------------------------------- |
-| `lint`         | Run ESLint                                   |
-| `typecheck`    | Type-check without emitting (`tsc --noEmit`) |
-| `format`       | Auto-format with Prettier                    |
-| `format:check` | Check formatting without writing             |
+| Script             | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `ci`               | `generate` + `typecheck` + `test` + `lint` + `format:check` |
+| `lint`             | Run ESLint                                                  |
+| `typecheck`        | Type-check without emitting (`tsc --noEmit`)                |
+| `format`           | Auto-format with Prettier                                   |
+| `format:check`     | Check formatting without writing                            |
+| `generate`         | `prisma generate` + `next typegen`                          |
+| `test`             | Unit suite (`test/unit/**`)                                 |
+| `test:watch`       | Unit suite in watch mode                                    |
+| `test:integration` | Integration suite (needs `db:test:up`)                      |
+
+`npm run ci` is what the `checks` job in CI runs. Run it before considering work
+done. It deliberately excludes `test:integration`, which needs a container.
 
 **Database & setup**
 
 | Script             | Description                                                             |
 | ------------------ | ----------------------------------------------------------------------- |
 | `agent:setup`      | One-shot setup: copy env, start DB, run migrations, generate client     |
-| `db:up`            | Start the Postgres container via Docker Compose                         |
-| `db:down`          | Stop and remove the Postgres container (destructive — drops volumes)    |
+| `db:up`            | Start the dev Postgres container via Docker Compose                     |
+| `db:down`          | Stop and remove the Postgres containers (destructive — drops volumes)   |
 | `db:reset`         | `db:down` + `db:up` + `prisma:bootstrap` — full wipe and restart        |
+| `db:test:up`       | Start the **test** Postgres container (port 5433)                       |
+| `db:test:down`     | Stop and remove the test Postgres container                             |
 | `copy-env`         | Safely copy `.env.docker` → `.env` without overwriting an existing file |
 | `prisma:deploy`    | Apply pending migrations                                                |
 | `prisma:generate`  | Regenerate the Prisma client                                            |

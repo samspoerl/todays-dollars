@@ -1,4 +1,5 @@
 services:
+  # The development database, used by `npm run agent:setup` via `.env.docker`.
   db:
     image: postgres:18-alpine
     restart: unless-stopped
@@ -16,5 +17,45 @@ services:
       timeout: 5s
       retries: 30
 
+  # A separate database for the integration suite (`npm run test:integration`),
+  # started by `npm run db:test:up`. Separate from `db` above on purpose: the
+  # suite TRUNCATEs every table between tests, so it must not be able to reach
+  # the development data — or the production Neon database that `.env` points
+  # at. The CI workflow starts an equivalent instance as a service container
+  # rather than using this file — keep the two in step, starting with the image
+  # tag.
+  db-test:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # The `_test` suffix is load-bearing, not decoration. `support/guard.ts`
+      # requires this exact database name, so the suite cannot TRUNCATE a
+      # database that merely happens to be on localhost — including `db` above.
+      POSTGRES_DB: todays_dollars_test
+    ports:
+      # 5433, not 5432, so this never collides with the `db` service or a
+      # Postgres the developer already runs locally. Combined with the database
+      # name above, a stray local server is unreachable from the suite by
+      # construction.
+      #
+      # Fixed rather than overridable: `vitest.integration.config.mts` hardcodes
+      # the connection string, so a port set only here would leave the suite
+      # dialing the wrong one. If 5433 is taken, change both.
+      - '5433:5432'
+    volumes:
+      # Postgres 18 wants the mount one level up from the 17-and-earlier
+      # convention of /var/lib/postgresql/data — it stores data in a
+      # major-version subdirectory now, and refuses to start against a volume
+      # mounted at the old path. See docker-library/postgres#1259.
+      - todays-dollars-test-db:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todays_dollars_test']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
 volumes:
   todays-dollars-db:
+  todays-dollars-test-db:
