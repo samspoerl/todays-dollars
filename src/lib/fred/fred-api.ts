@@ -1,5 +1,4 @@
 // This module calls the FRED API.
-'use server'
 
 import { FredResponse } from '@/lib/fred/fred-types'
 import { type InflationMeasure, type ServerResponse } from '@/lib/types'
