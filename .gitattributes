@@ -1,0 +1,19 @@
+# Normalize line endings to LF for all text files.
+# Git auto-detects text vs binary; text files are stored and checked out as LF
+# regardless of the contributor's core.autocrlf setting. Without this, a Windows
+# checkout produces CRLF and prettier (endOfLine: "lf") flags every file, while
+# the same commit checks out LF on the Linux CI runner and passes.
+* text=auto eol=lf
+
+# Explicitly mark binary assets so they are never line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
