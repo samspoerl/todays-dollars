@@ -18,6 +18,23 @@ updates:
       semver-major-days: 14
       semver-minor-days: 7
       semver-patch-days: 3
+    ignore:
+      # TypeScript 7 cannot be linted. `typescript-eslint` peer-requires
+      # `typescript >=4.8.4 <6.1.0` and throws at module load on 7.0, so every
+      # `eslint-config-next` entry point fails before reading a single file —
+      # there is no version of it, and no eslint config, that runs on TS 7.
+      #
+      # A major bump to 7.0.2 was merged on 2026-08-05 and broke `npm run lint`
+      # silently for five weeks: nothing in the repo ran eslint, and Next 16
+      # does not lint during `next build`, so only a stale local node_modules
+      # made it look like it still worked.
+      #
+      # Hold at 6.x until typescript-eslint ships support, tracked in
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      # (TS >=7.1). Then remove this entry and take the bump deliberately,
+      # confirming `npm run lint` passes on the upgrade PR.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
     groups:
       react:
         patterns:
