@@ -12,12 +12,10 @@ export default function setup() {
   // Ensure the schema exists on a possibly-fresh Docker volume before any test
   // connects. `migrate deploy` is idempotent — a no-op when already up to date.
   //
-  // `prisma.config.ts` does `import 'dotenv/config'`, and this repository's
-  // `.env` holds the development Neon URLs. dotenv does not overwrite a
-  // variable that is already set, so the values assigned in the vitest config
-  // win — but that is the single fact keeping `migrate deploy` off a remote
-  // database, so `assertLocalDatabase` runs immediately above and
-  // `support/db.ts` re-checks the live connection before the first TRUNCATE.
+  // `prisma.config.ts` does `import 'dotenv/config'`, and `.env` may hold any
+  // connection string. dotenv leaves already-set variables alone, so the
+  // config's values win — which is why `assertLocalDatabase` runs immediately
+  // above, before anything can migrate.
   execSync('npx prisma migrate deploy', {
     stdio: 'inherit',
     env: process.env,

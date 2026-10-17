@@ -2,19 +2,11 @@ import { config as loadEnv } from 'dotenv'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
-// The FRED API key comes from the developer's `.env` (and from repository
-// secrets in CI). Loaded explicitly and **before** the hardcoded values below,
-// so that anything this file pins still wins.
-//
-// This matters more here than it looks: `.env` in this repository holds the
-// **development Neon** `DATABASE_URL` and `DIRECT_URL` (production is a
-// separate database, and its credentials are not in this repository), and this
-// suite TRUNCATEs every table between tests. The protection is not the file
-// boundary — it is
-// that `Object.assign` below overwrites whatever dotenv set, that `testEnv`
-// forwards only the FRED name to the workers, and that `support/guard.ts`
-// refuses to run against anything but the local container. Three checks, none
-// of which depend on which file the values came from.
+// Loaded only for the FRED API key (repository secrets supply it in CI), and
+// loaded **before** the hardcoded values below so they still win. `.env` can
+// hold any connection string, so nothing here relies on what it contains:
+// `Object.assign` overwrites whatever dotenv set, `testEnv` forwards only the
+// FRED key, and `support/guard.ts` refuses anything but the local container.
 loadEnv({ path: '.env', quiet: true })
 
 // The local Docker Postgres started by `npm run db:test:up` (the `db-test`
@@ -31,11 +23,8 @@ const env = {
   DATABASE_URL,
   // `prisma.config.ts` reads DIRECT_URL for `migrate deploy`.
   DIRECT_URL: DATABASE_URL,
-  // Pinned, and load-bearing in a way the finance-demo equivalent is not:
-  // `src/lib/prisma.ts` selects `PrismaNeon` unless this is exactly `'pg'`.
-  // Without it the suite would try to reach a plain Docker Postgres over the
-  // Neon serverless driver — which fails, but fails confusingly, and an
-  // ambient value could just as easily point a working driver somewhere real.
+  // Load-bearing: `src/lib/prisma.ts` selects `PrismaNeon` unless this is
+  // exactly `'pg'`, which would reach past the URL checks to a remote endpoint.
   // `support/guard.ts` re-checks it.
   DATABASE_ADAPTER: 'pg',
 }
@@ -59,7 +48,7 @@ Object.assign(process.env, env)
 //
 // Note what is NOT forwarded: DATABASE_URL, DIRECT_URL and DATABASE_ADAPTER
 // reach the workers only as the hardcoded values in `env` above. There is no
-// path by which a worker sees the Neon URL that `loadEnv` just read.
+// path by which a worker sees a connection string that `loadEnv` read.
 const fredApiKey = process.env.FRED_TEST_API_KEY || process.env.FRED_API_KEY
 
 const testEnv: Record<string, string> = { ...env }

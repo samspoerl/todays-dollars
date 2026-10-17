@@ -10,12 +10,12 @@ import {
  * It cannot be tested from inside the integration suite: that suite only ever
  * runs with valid values on `process.env`, so the only case it exercises is the
  * one that passes. Its whole purpose is the cases that must *not* pass, and the
- * one thing standing between a stray `DATABASE_URL` and a TRUNCATE of the
- * shared development Neon database deserves a test that actually tries them.
+ * one thing standing between an unknown `DATABASE_URL` and a TRUNCATE deserves
+ * a test that actually tries them.
  *
  * The guard rejects *any* non-local target rather than enumerating known ones,
- * so `REMOTE_NEON` below stands in for whatever happens to be in `.env` — it
- * is not a real credential.
+ * so `REMOTE_NEON` below stands in for whatever `.env` might hold — it is not a
+ * real credential.
  *
  * These specs mutate `process.env` directly and restore it afterwards. Nothing
  * here opens a connection.

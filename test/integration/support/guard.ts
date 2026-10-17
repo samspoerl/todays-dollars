@@ -1,37 +1,16 @@
 /**
  * Hard safety guard for the integration suite.
  *
- * These tests TRUNCATE every table between cases, so pointing them at anything
- * but the local Docker Postgres is destructive — and `.env` in this repository
- * holds the **development Neon** `DATABASE_URL` and `DIRECT_URL`, sitting in
- * the ambient environment. Production is a separate database and its
- * credentials are not in this repository, so the stake here is not
- * irreplaceable data.
+ * These tests TRUNCATE every table between cases, and `.env` may hold any
+ * connection string — there is no way to know which database it names. So
+ * this rejects *any* target that isn't unmistakably the throwaway container,
+ * rather than enumerating the ones to avoid.
  *
- * The stake is that wiping the shared development database mid-session is a
- * confusing, silent failure: the app keeps running and simply has no data any
- * more. `observations` and `metadata` are a cache of FRED and would refill on
- * the next request; `telemetry` has no upstream to re-fetch from, so whatever
- * development history it held is gone.
- *
- * The guard is written to reject *any* non-local target rather than to
- * enumerate the ones it knows about, so it holds regardless of which Neon
- * database happens to be in `.env`.
- *
- * `vitest.integration.config.mts` already pins the connection strings, but the
- * config can be edited, so this refuses to run unless the resolved values are
- * unmistakably the throwaway container.
- *
- * Both URLs are checked, not just `DATABASE_URL`: the queries under test connect
- * with that one, but `prisma.config.ts` runs `migrate deploy` against
- * `DIRECT_URL`, which is just as capable of pointing somewhere real.
- *
- * The host check alone is not enough — the `db` service in docker-compose.yml
- * is also on localhost — so the database name must match too, and the compose
- * file names the test service's database `todays_dollars_test` for exactly that
- * reason. See `assertConnectedDatabaseIsLocal` in `./db.ts` for the third
- * check, which interrogates the live connection rather than the string that
- * opened it.
+ * Both URLs are checked: queries use `DATABASE_URL`, but `prisma.config.ts`
+ * runs `migrate deploy` against `DIRECT_URL`. The host check alone is not
+ * enough — the `db` service in docker-compose.yml is also on localhost — so the
+ * database name must match too. See `assertConnectedDatabaseIsLocal` in
+ * `./db.ts` for the check against the live connection.
  */
 
 const LOCAL_HOSTS = ['@localhost:', '@127.0.0.1:']
@@ -62,9 +41,6 @@ function redact(url: string): string {
 }
 
 /**
- * The adapter check, which the finance-demo equivalent of this file does not
- * need.
- *
  * `src/lib/prisma.ts` picks `PrismaNeon` unless `DATABASE_ADAPTER` is exactly
  * `'pg'`, and the Neon serverless driver speaks HTTP to Neon's endpoint rather
  * than the Postgres wire protocol to a host. So this is not only about the

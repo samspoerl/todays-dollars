@@ -18,12 +18,10 @@ services:
       retries: 30
 
   # A separate database for the integration suite (`npm run test:integration`),
-  # started by `npm run db:test:up`. Separate from `db` above on purpose: the
-  # suite TRUNCATEs every table between tests, so it must not be able to reach
-  # the development data — or the production Neon database that `.env` points
-  # at. The CI workflow starts an equivalent instance as a service container
-  # rather than using this file — keep the two in step, starting with the image
-  # tag.
+  # started by `npm run db:test:up`. The suite TRUNCATEs every table between
+  # tests, so it gets its own database rather than sharing `db` above. CI starts
+  # an equivalent service container instead of using this file — keep the two
+  # in step, starting with the image tag.
   db-test:
     image: postgres:18-alpine
     restart: unless-stopped

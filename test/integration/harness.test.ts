@@ -5,9 +5,8 @@ import { prisma } from './support/db'
  * Proves the harness itself is pointed where it thinks it is, before any spec
  * relies on it. If this file fails, nothing else in the suite means anything.
  *
- * The stake is higher here than the name suggests: `.env` in this repository
- * holds the development Neon credentials, and every test in this suite starts
- * with a TRUNCATE.
+ * Every test here starts with a TRUNCATE, and `.env` may hold any connection
+ * string, so this is the check that the guards actually held.
  */
 describe('integration harness', () => {
   it('is connected to the local throwaway database, not Neon', async () => {

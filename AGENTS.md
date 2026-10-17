@@ -118,12 +118,10 @@ mirror the `src/` path of what they cover.
 
 ### Hard constraints
 
-- **The integration suite TRUNCATEs.** `.env` holds the **development Neon**
-  credentials — production is a separate database and its credentials are not in
-  this repository — so the stake is not irreplaceable data; it is that wiping
-  the shared development database mid-session is a confusing, silent failure.
-  Three independent guards keep the suite on the local container, and they
-  reject _any_ non-local target rather than enumerating known ones:
+- **The integration suite TRUNCATEs.** `.env` can hold any connection string,
+  and the suite has no way to know which, so it must never trust it. Three
+  independent guards keep the suite on the local container, and they reject
+  _any_ non-local target rather than enumerating known ones:
   `vitest.integration.config.mts` hardcodes the connection string,
   `support/guard.ts` re-checks the resolved values before `migrate deploy` and
   before every reset, and `support/db.ts` asks the connected server who it is

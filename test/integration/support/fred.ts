@@ -9,10 +9,9 @@ import { type ServerResponse } from '@/lib/types'
  * (~950 monthly observations), so the suite is nowhere near the ceiling — but
  * only as long as it stays deliberate about how many calls it makes.
  *
- * Nothing here costs money and nothing is destructive, which is why this file
- * is much shorter than the finance-demo equivalent it is modelled on. FRED is
- * a read-only public data API; the worst outcome of a mistake is a throttled
- * key and a confusing red build.
+ * Nothing here costs money and nothing is destructive: FRED is a read-only
+ * public data API, so the worst outcome of a mistake is a throttled key and a
+ * confusing red build.
  *
  * ## Request budget
  *
