@@ -92,7 +92,36 @@ describe('inputsSchema', () => {
       const result = inputsSchema.safeParse({ ...valid, startYear: 1946 })
 
       expect(result.success).toBe(false)
-      expect(result.error?.issues[0].message).toBe('Year must be 1947 or later')
+      expect(result.error?.issues[0].message).toBe(
+        'Year must be 1947 or later for CPI'
+      )
+    })
+
+    it('accepts 1959 for PCE, the first year FRED has PCE data for', () => {
+      expect(
+        inputsSchema.parse({
+          ...valid,
+          inflationMeasure: 'PCE',
+          startYear: 1959,
+        }).startYear
+      ).toBe(1959)
+    })
+
+    it('rejects 1958 for PCE, though CPI would accept it', () => {
+      const result = inputsSchema.safeParse({
+        ...valid,
+        inflationMeasure: 'PCE',
+        startYear: 1958,
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0].path).toEqual(['startYear'])
+      expect(result.error?.issues[0].message).toBe(
+        'Year must be 1959 or later for PCE'
+      )
+      expect(
+        inputsSchema.safeParse({ ...valid, startYear: 1958 }).success
+      ).toBe(true)
     })
 
     it('accepts the current year', () => {
