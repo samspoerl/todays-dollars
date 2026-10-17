@@ -147,7 +147,7 @@ export function InputForm({
             control={form.control}
             name="startAmount"
             render={({ field }) => (
-              <FormItem className="mx-1 inline-block">
+              <FormItem className="mx-1 inline-block align-middle">
                 <FormControl>
                   <Input
                     {...field}
@@ -163,15 +163,17 @@ export function InputForm({
             control={form.control}
             name="startYear"
             render={({ field }) => (
-              <FormItem className="mx-1 inline-block">
+              <FormItem className="mx-1 inline-block align-middle">
                 <FormControl>
                   <NativeSelect
                     {...field}
                     value={String(field.value)}
                     onChange={(e) => field.onChange(Number(e.target.value))}
-                    // text-base below md matches Input and keeps iOS from
-                    // zooming in when the select is focused.
-                    className="text-base md:text-sm"
+                    // Matches the amount Input: same padding and text size (16px
+                    // below md keeps iOS from zooming on focus), centered text,
+                    // and no fill. text-align-last is what centers a select's
+                    // value; text-align alone doesn't reach it.
+                    className="w-24 py-1 text-center text-base [text-align-last:center] md:text-sm dark:bg-transparent dark:hover:bg-transparent"
                   >
                     {years.map((year) => (
                       <NativeSelectOption key={year} value={year}>
