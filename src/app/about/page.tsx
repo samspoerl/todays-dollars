@@ -47,12 +47,12 @@ export default function AboutPage() {
         </li>
         <li>
           <a
-            href="https://www.mongodb.com/"
+            href="https://neon.com/"
             className={externalLinkStyle}
             target="_blank"
             rel="noopener noreferrer"
           >
-            MongoDB
+            Neon Postgres
           </a>
         </li>
         <li>
