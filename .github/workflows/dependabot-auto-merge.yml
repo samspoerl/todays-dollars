@@ -1,13 +1,39 @@
+# Merges Dependabot PRs that are (a) free of major/breaking bumps, (b) green on
+# CI, and (c) backed by a successful Vercel Preview deployment. Runs on a
+# schedule rather than on the PR event: a scheduled sweep re-checks every open
+# PR each day, so a PR that was still building yesterday gets picked up today
+# without needing a re-run.
+#
+# The version pairs are read from the PR body rather than the title, so a
+# grouped update (see the `react`, `next` and `prisma` groups in dependabot.yml)
+# is judged by the bumps it actually contains instead of being skipped for
+# having no versions in its title.
 name: Dependabot scheduled auto-merge
 
 on:
   schedule:
     - cron: '0 14 * * *' # 14:00 UTC — ~10:00 ET (EDT) / 9:00 ET (EST)
-  workflow_dispatch: # allow manual runs for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would merge, without merging'
+        type: boolean
+        # Defaults to true because a manual run is normally a test, and
+        # dispatch is only offered from the default branch — where the
+        # ref-based guard below would otherwise resolve straight to live.
+        default: true
 
 permissions:
   contents: write
   pull-requests: write
+  checks: read
+  statuses: read
+  # `gh` resolves a check run's workflowName through checkSuite.workflowRun,
+  # which sits behind the `actions` scope. Without it the rollup query returns
+  # partial data plus per-node "Resource not accessible by integration" errors,
+  # gh treats that as a hard failure, and no PR ever resolves to a verdict.
+  actions: read
+  # For the Vercel Preview deployment lookup.
   deployments: read
 
 concurrency:
@@ -19,64 +45,227 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Merge Dependabot PRs that passed Vercel Preview
+      - name: Merge Dependabot PRs with green CI and a good Preview deployment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          DRY_RUN: ${{ github.ref != 'refs/heads/main' && 'true' || 'false' }}
+          # The workflow that constitutes "CI passed". Matching on the workflow
+          # name rather than the job names means a future third job in ci.yml is
+          # required too, instead of being silently ignored.
+          CI_WORKFLOW: CI
+          # Only consulted when a check run reports no workflowName, which
+          # shouldn't happen given `actions: read` above. Lists every job in
+          # ci.yml so the fallback isn't weaker than the rule it stands in for —
+          # a single name here would let a green `Checks` merge over a failing
+          # `Integration tests`.
+          CI_JOBS: 'Checks,Integration tests'
+          # Dry unless a scheduled run on main, or a dispatch that opted out.
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || github.ref != 'refs/heads/main' }}
         run: |
           set -uo pipefail
-          # GitHub Actions runs this with `bash -e` by default; disable errexit
-          # so a single failing API call doesn't abort the whole loop.
+          # Actions runs this with `bash -e` by default; disable errexit so a
+          # single failing API call doesn't abort the whole loop.
           set +e
 
           if [ "$DRY_RUN" = "true" ]; then
-            echo "::notice::Dry run mode — no PRs will be merged (branch is not main)"
+            echo "::notice::Dry run — no PRs will be merged"
           fi
 
-          prs=$(gh pr list \
-            --repo "$REPO" \
-            --author 'app/dependabot' \
-            --state open \
-            --json number,title,headRefOid)
+          # Version strings, with an optional prerelease/build suffix so a
+          # `1.2.3-beta.1` bump is read rather than silently skipped.
+          v='[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?'
+          bump_re="from[[:space:]]+($v)[[:space:]]+to[[:space:]]+($v)"
 
-          echo "$prs" | jq -c '.[]' | while read -r pr; do
+          # The package a bump line is about: "Bumps [name](url) from ..." on a
+          # single-dependency PR, "Updates `name` from ..." per member of a
+          # grouped one. Single-quoted so the backticks stay literal.
+          bumps_pkg_re='^Bumps[[:space:]]+\[([^]]+)\]'
+          updates_pkg_re='^Updates[[:space:]]+`([^`]+)`'
+
+          # Returns 0 (true) when a bump crosses a major version, or is a 0.x
+          # minor bump — in semver a 0.x minor is allowed to break.
+          is_breaking() {
+            local from="$1" to="$2"
+            local from_major="${from%%.*}" to_major="${to%%.*}"
+            if [ "$from_major" != "$to_major" ]; then
+              return 0
+            fi
+            if [ "$from_major" = "0" ]; then
+              local from_minor to_minor
+              from_minor=$(echo "$from" | cut -d. -f2)
+              to_minor=$(echo   "$to"   | cut -d. -f2)
+              if [ "${from_minor:-0}" != "${to_minor:-0}" ]; then
+                return 0
+              fi
+            fi
+            return 1
+          }
+
+          prs=$(gh pr list --repo "$REPO" --author 'app/dependabot' \
+            --state open --limit 100 \
+            --json number,title,body,isDraft,mergeable,headRefOid)
+
+          if [ "$(echo "$prs" | jq 'length')" -eq 0 ]; then
+            echo "No open Dependabot PRs."
+            exit 0
+          fi
+
+          echo '| PR | Versions | CI | Preview | Action |' >> "$GITHUB_STEP_SUMMARY"
+          echo '| --- | --- | --- | --- | --- |'           >> "$GITHUB_STEP_SUMMARY"
+
+          # Loop in the current shell via process substitution rather than
+          # `... | while read`, which runs the body in a subshell and would
+          # discard the summary rows appended below.
+          while read -r pr; do
             number=$(echo "$pr" | jq -r '.number')
             title=$(echo  "$pr" | jq -r '.title')
+            body=$(echo   "$pr" | jq -r '.body // ""')
+            draft=$(echo  "$pr" | jq -r '.isDraft')
+            mergeable=$(echo "$pr" | jq -r '.mergeable')
             sha=$(echo    "$pr" | jq -r '.headRefOid')
 
             echo "::group::PR #$number — $title"
 
-            # Match "from X to Y" where X and Y are dotted version strings.
-            if ! [[ "$title" =~ from[[:space:]]+([0-9]+(\.[0-9]+)*)[[:space:]]+to[[:space:]]+([0-9]+(\.[0-9]+)*) ]]; then
-              echo "Could not parse version bump from title — skipping"
+            if [ "$draft" = "true" ]; then
+              echo "Draft — skipping"
+              echo "| #$number | - | - | - | skipped (draft) |" >> "$GITHUB_STEP_SUMMARY"
               echo "::endgroup::"
               continue
             fi
 
-            from_version="${BASH_REMATCH[1]}"
-            to_version="${BASH_REMATCH[3]}"
-            from_major="${from_version%%.*}"
-            to_major="${to_version%%.*}"
+            # Every version pair Dependabot states, read from the PR body rather
+            # than the title. A single-dependency PR puts one "Bumps X from A to
+            # B" line there; a grouped PR titles itself "bump the next group
+            # with 2 updates" with no versions at all, and lists one "Updates X
+            # from A to B" line per member. Reading the body handles both, and
+            # anchoring to the line start keeps version strings inside the
+            # embedded release notes from being mistaken for bumps. A stray
+            # extra pair is safe by construction: pairs can only add reasons to
+            # skip, never cancel a real major.
+            pairs=()
+            pkgs=()
+            unparsed=0
+            while IFS= read -r line; do
+              if [[ "$line" =~ $bump_re ]]; then
+                # Groups 2/3 and 5/6 are the version regex's own internals.
+                pairs+=("${BASH_REMATCH[1]} ${BASH_REMATCH[4]}")
+              else
+                # A line that says it's a bump but whose versions wouldn't
+                # parse. Counted rather than ignored, so an unreadable member of
+                # a grouped PR can't ride along on its siblings' pairs.
+                unparsed=$((unparsed + 1))
+                continue
+              fi
 
-            if [ "$from_major" != "$to_major" ]; then
-              echo "Major bump ($from_version → $to_version) — skipping"
+              # Package name, used only to count group members below.
+              if [[ "$line" =~ $bumps_pkg_re ]]; then
+                pkgs+=("${BASH_REMATCH[1]}")
+              elif [[ "$line" =~ $updates_pkg_re ]]; then
+                pkgs+=("${BASH_REMATCH[1]}")
+              fi
+            done < <(printf '%s\n' "$body" \
+              | grep -E '^(Bumps|Updates) .*[[:space:]]from[[:space:]].*[[:space:]]to[[:space:]]')
+
+            if [ "${#pairs[@]}" -eq 0 ] || [ "$unparsed" -gt 0 ]; then
+              # Never merge on an unparsed body — a silent "no bumps found" must
+              # not read as "no major bumps found".
+              echo "Could not parse every version bump from the PR body (${#pairs[@]} read, $unparsed unreadable) — skipping"
+              echo "| #$number | unparsed | - | - | skipped (no versions) |" >> "$GITHUB_STEP_SUMMARY"
               echo "::endgroup::"
               continue
             fi
 
-            # In semver, 0.x.y minor bumps are treated as breaking.
-            if [ "$from_major" = "0" ]; then
-              from_minor=$(echo "$from_version" | cut -d. -f2)
-              to_minor=$(echo   "$to_version"   | cut -d. -f2)
-              if [ "${from_minor:-0}" != "${to_minor:-0}" ]; then
-                echo "0.x minor bump ($from_version → $to_version) treated as breaking — skipping"
+            # A grouped PR states its own size ("Bumps the react group with 4
+            # updates"). GitHub caps a PR body at 64KB and Dependabot truncates
+            # to fit, which can cut member "Updates X from A to B" lines off the
+            # end. Without this check a missing member is invisible rather than
+            # unparsed, and the PR would merge judged on its siblings alone.
+            declared=$(printf '%s\n' "$body" \
+              | sed -nE 's/^Bumps the .* group with ([0-9]+) updates?.*/\1/p' | head -1)
+
+            if [ -n "$declared" ]; then
+              listed=$(printf '%s\n' ${pkgs[@]+"${pkgs[@]}"} | sort -u | grep -c .)
+              if [ "$listed" -ne "$declared" ]; then
+                echo "Body declares $declared group members but lists $listed — truncated body; skipping"
+                echo "| #$number | $listed/$declared members | - | - | skipped (truncated body) |" >> "$GITHUB_STEP_SUMMARY"
                 echo "::endgroup::"
                 continue
               fi
             fi
 
-            # Find the most recent Preview deployment for this SHA created by Vercel.
+            breaking=''
+            for p in "${pairs[@]}"; do
+              from="${p%% *}"
+              to="${p##* }"
+              if is_breaking "$from" "$to"; then
+                echo "  $from -> $to (major/breaking)"
+                breaking="${breaking:+$breaking, }$from→$to"
+              else
+                echo "  $from -> $to (ok)"
+              fi
+            done
+
+            versions="${#pairs[@]} bump(s)"
+
+            if [ -n "$breaking" ]; then
+              echo "Major/breaking bump ($breaking) — leaving open for manual review"
+              echo "| #$number | $versions | - | - | skipped (major: $breaking) |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::endgroup::"
+              continue
+            fi
+
+            # --- CI verdict ---
+            rollup=$(gh pr view "$number" --repo "$REPO" --json statusCheckRollup \
+              --jq '.statusCheckRollup // []')
+
+            if [ -z "$rollup" ]; then
+              echo "Could not read the status rollup — leaving open"
+              echo "| #$number | $versions | ERROR | - | skipped (rollup unreadable) |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::endgroup::"
+              continue
+            fi
+
+            # A re-run adds a second check run under the same name, so collapse
+            # to the newest per name before judging.
+            latest=$(echo "$rollup" | jq '
+              [ .[] | select(.__typename == "CheckRun") ]
+              | group_by(.name) | map(sort_by(.startedAt // "") | last)')
+
+            required=$(echo "$latest" | jq --arg wf "$CI_WORKFLOW" --arg jobs "$CI_JOBS" '
+              ($jobs | split(",")) as $names
+              | [ .[] | select(.workflowName == $wf
+                               or ((.workflowName // "") == "" and (.name | IN($names[])))) ]')
+
+            if [ "$(echo "$required" | jq 'length')" -eq 0 ]; then
+              # Distinct from "all checks green": a PR with no CI run at all
+              # would satisfy an all-green rule vacuously. It must not merge.
+              ci='NO_CI'
+            elif echo "$required" | jq -e 'any(.status != "COMPLETED")' >/dev/null; then
+              ci='PENDING'
+            elif echo "$required" | jq -e 'all(.conclusion == "SUCCESS")' >/dev/null; then
+              ci='PASS'
+            else
+              ci='FAIL'
+            fi
+
+            echo "Required CI ($CI_WORKFLOW): $ci"
+
+            if [ "$ci" != "PASS" ]; then
+              case "$ci" in
+                PENDING) echo "CI still running — will retry next scheduled run" ;;
+                FAIL)    echo "CI failed — leaving open for manual review" ;;
+                NO_CI)   echo "No CI run found for the head commit — leaving open" ;;
+              esac
+              echo "| #$number | $versions | $ci | - | left open |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::endgroup::"
+              continue
+            fi
+
+            # --- Vercel Preview verdict ---
+            # Judged from the deployments API rather than the rollup above: the
+            # thing that has to be green is the deployment itself, and it is not
+            # part of the CI workflow. Most recent Preview deployment for this
+            # SHA created by Vercel.
             deployment_id=$(gh api "repos/$REPO/deployments?sha=$sha" \
               --jq '[.[] | select(.environment == "Preview" and .creator.login == "vercel[bot]")]
                     | sort_by(.created_at) | reverse | .[0].id // empty')
@@ -94,27 +283,42 @@ jobs:
 
             case "$state" in
               success)
-                if [ "$DRY_RUN" = "true" ]; then
+                # Checked last: a conflicting PR can't merge regardless, but
+                # Dependabot rebases it on its own, so the next sweep retries.
+                if [ "$mergeable" = "CONFLICTING" ]; then
+                  echo "Green but the branch conflicts — Dependabot will rebase; retrying next run"
+                  echo "| #$number | $versions | PASS | success | skipped (conflicting) |" >> "$GITHUB_STEP_SUMMARY"
+                elif [ "$DRY_RUN" = "true" ]; then
                   echo "Would merge PR #$number (dry run)"
+                  echo "| #$number | $versions | PASS | success | would merge (dry run) |" >> "$GITHUB_STEP_SUMMARY"
                 else
                   echo "Merging PR #$number"
-                  gh pr merge --repo "$REPO" --squash "$number" \
-                    || echo "Merge failed for PR #$number"
+                  # Squash, so each update lands on main as one commit (#198).
+                  if gh pr merge "$number" --repo "$REPO" --squash; then
+                    echo "| #$number | $versions | PASS | success | merged |" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo "Merge failed for PR #$number"
+                    echo "| #$number | $versions | PASS | success | merge failed |" >> "$GITHUB_STEP_SUMMARY"
+                  fi
                 fi
                 ;;
               failure|error)
                 echo "Deployment failed — leaving open for manual review"
+                echo "| #$number | $versions | PASS | $state | left open |" >> "$GITHUB_STEP_SUMMARY"
                 ;;
               pending|queued|in_progress)
                 echo "Still deploying — will retry next scheduled run"
+                echo "| #$number | $versions | PASS | $state | left open |" >> "$GITHUB_STEP_SUMMARY"
                 ;;
               inactive)
                 echo "Deployment superseded — leaving open"
+                echo "| #$number | $versions | PASS | inactive | left open |" >> "$GITHUB_STEP_SUMMARY"
                 ;;
               *)
                 echo "No Vercel Preview deployment yet — leaving open"
+                echo "| #$number | $versions | PASS | missing | left open |" >> "$GITHUB_STEP_SUMMARY"
                 ;;
             esac
 
             echo "::endgroup::"
-          done
+          done < <(echo "$prs" | jq -c '.[]')
