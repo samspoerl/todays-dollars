@@ -180,12 +180,15 @@ jobs:
             # to fit, which can cut member "Updates X from A to B" lines off the
             # end. Without this check a missing member is invisible rather than
             # unparsed, and the PR would merge judged on its siblings alone.
+            # Only fewer counts: Dependabot's own header can undercount (a
+            # "with 7 updates" body listing 8), and an extra listed member
+            # hides nothing — its pair is judged like the rest.
             declared=$(printf '%s\n' "$body" \
               | sed -nE 's/^Bumps the .* group with ([0-9]+) updates?.*/\1/p' | head -1)
 
             if [ -n "$declared" ]; then
               listed=$(printf '%s\n' ${pkgs[@]+"${pkgs[@]}"} | sort -u | grep -c .)
-              if [ "$listed" -ne "$declared" ]; then
+              if [ "$listed" -lt "$declared" ]; then
                 echo "Body declares $declared group members but lists $listed — truncated body; skipping"
                 echo "| #$number | $listed/$declared members | - | - | skipped (truncated body) |" >> "$GITHUB_STEP_SUMMARY"
                 echo "::endgroup::"
