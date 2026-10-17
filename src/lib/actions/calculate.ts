@@ -1,5 +1,6 @@
 'use server'
 
+import { compoundObservations } from '@/lib/inflation'
 import { getInflationData } from '@/lib/inflation-data'
 import logTelemetry from '@/lib/logs'
 import {
@@ -33,21 +34,11 @@ export async function getInflationAdjustedAmounts({
     }
   }
 
-  let runningValue: number = startAmount
-  const inflationAdjAmounts: ObservationDto[] = []
-
-  for (let i = 0; i < observations.length; i++) {
-    const pctChange = observations[i].value
-    const pctChangeDecimal = pctChange / 100
-    runningValue = runningValue * (1 + pctChangeDecimal)
-    inflationAdjAmounts.push({
-      id: observations[i].id,
-      inflationMeasure,
-      year: observations[i].year,
-      month: observations[i].month,
-      value: runningValue,
-    })
-  }
+  const inflationAdjAmounts = compoundObservations(
+    startAmount,
+    inflationMeasure,
+    observations
+  )
 
   // Log metrics
   // Use 'after' to log metrics after returning response to client

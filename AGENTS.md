@@ -40,6 +40,7 @@ src/
   lib/
     actions/             # Server Actions
       calculate.ts       # getInflationAdjustedAmounts — main calculation action
+    inflation.ts         # Pure inflation math: compounding, FRED→DTO, staleness
     fred/                # FRED API integration
       fred-api.ts        # callFred — fetches inflation series from FRED
       fred-types.ts      # FRED response types
@@ -164,13 +165,11 @@ mirror the `src/` path of what they cover.
   try/catch. A failure between the two leaves the cache empty rather than
   stale. (`getCachedObservations` does have a try/catch; the write path does
   not.)
-- **The compounding in `calculate.ts` has no test.** It is the most valuable
-  logic in the app and is unreachable from either suite: it is inline in a
-  `'use server'` action that calls `after()` from `next/server`, which throws
-  outside a request scope. Same for the FRED→DTO transform and the staleness
-  math inlined in `inflation-data.ts`. Extracting them is the next piece of
-  work; until then the integration suite covers them only indirectly, through
-  a real database and real FRED data.
+- **Keep inflation math in `src/lib/inflation.ts`.** The compounding, the
+  FRED→DTO transform and the staleness check live there as pure functions and
+  are unit tested. `calculate.ts` is a `'use server'` action that calls
+  `after()` from `next/server`, which throws outside a request scope, so
+  logic left inline there is unreachable from either suite.
 - **`inputsSchema`'s upper bound is `new Date().getFullYear()`**, computed at
   module scope. Specs derive their expectations the same way rather than
   hardcoding a year, so they cannot catch a mistake in how the bound is
