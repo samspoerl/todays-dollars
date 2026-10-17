@@ -43,6 +43,7 @@ src/
     fred/                # FRED API integration
       fred-api.ts        # callFred — fetches inflation series from FRED
       fred-types.ts      # FRED response types
+    inflation.ts         # Pure inflation math: compounding, FRED→DTO, staleness
     inflation-data.ts    # Reads/writes inflation observations to the database
     logs.ts              # Telemetry logging (logTelemetry)
     prisma.ts            # Shared Prisma client (pooled)
@@ -153,7 +154,7 @@ mirror the `src/` path of what they cover.
 - **A `.` in a FRED series is not only the first observation.** `pch` units
   have no change to report for the first month, but FRED also uses `.` for
   genuine mid-series gaps — CPI currently carries three (1947-01, plus 2025-10
-  and 2025-11). `inflation-data.ts` maps every `.` to `0`, so those months
+  and 2025-11). `toObservationCreateDtos` maps every `.` to `0`, so those months
   compound as **0% inflation** rather than being interpolated or skipped. That
   understates cumulative inflation across any range spanning them, and it does
   not error. The integration spec asserts the contract that actually matters —
@@ -164,13 +165,11 @@ mirror the `src/` path of what they cover.
   try/catch. A failure between the two leaves the cache empty rather than
   stale. (`getCachedObservations` does have a try/catch; the write path does
   not.)
-- **The compounding in `calculate.ts` has no test.** It is the most valuable
-  logic in the app and is unreachable from either suite: it is inline in a
-  `'use server'` action that calls `after()` from `next/server`, which throws
-  outside a request scope. Same for the FRED→DTO transform and the staleness
-  math inlined in `inflation-data.ts`. Extracting them is the next piece of
-  work; until then the integration suite covers them only indirectly, through
-  a real database and real FRED data.
+- **Keep inflation math in `src/lib/inflation.ts`.** The compounding, the
+  FRED→DTO transform and the staleness check live there as pure functions and
+  are unit tested. `calculate.ts` is a `'use server'` action that calls
+  `after()` from `next/server`, which throws outside a request scope, so
+  logic left inline there is unreachable from either suite.
 - **`inputsSchema`'s upper bound is `new Date().getFullYear()`**, computed at
   module scope. Specs derive their expectations the same way rather than
   hardcoding a year, so they cannot catch a mistake in how the bound is

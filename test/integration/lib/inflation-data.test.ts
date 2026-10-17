@@ -69,7 +69,7 @@ describe('getInflationData — served from cache', () => {
 
   it('orders by year then month ascending, which the compounding depends on', async () => {
     await createMetadata({ inflationMeasure: 'CPI', updatedAt: new Date() })
-    // Inserted out of order on purpose: `calculate.ts` compounds the rows in
+    // Inserted out of order on purpose: `compoundObservations` compounds the rows in
     // the order it receives them, so a wrong ORDER BY would not throw — it
     // would return a wrong dollar amount.
     await createObservation({ year: 2021, month: 2, value: 0.2 })
@@ -207,7 +207,7 @@ describe.skipIf(!hasFredCredentials())(
       // The FRED→DTO transform, verified against real upstream data rather
       // than a fixture. FRED reports the first observation of a `pch` series
       // as "." — there is no prior month to compute a change against — and
-      // `inflation-data.ts` maps that sentinel to 0. Any other handling
+      // `toObservationCreateDtos` maps that sentinel to 0. Any other handling
       // (NaN, null, a parse failure) would poison the compounding from the
       // very first month.
       const first = result.data[0]
@@ -215,7 +215,7 @@ describe.skipIf(!hasFredCredentials())(
       expect(first.value).toBe(0)
 
       // Every value must be a finite number, or the running product in
-      // `calculate.ts` silently becomes NaN for every later month.
+      // `compoundObservations` silently becomes NaN for every later month.
       expect(result.data.every((o) => Number.isFinite(o.value))).toBe(true)
     })
 

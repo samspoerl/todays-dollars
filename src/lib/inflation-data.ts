@@ -1,16 +1,15 @@
 // This module fetches the inflation data (observations) from cache or FRED (if stale).
 
 import { callFred } from '@/lib/fred/fred-api'
+import { isCacheStale, toObservationCreateDtos } from '@/lib/inflation'
 import prisma from '@/lib/prisma'
 import { metadataSelect, observationSelect } from '@/lib/select-schemas'
 import {
   type InflationMeasure,
-  type ObservationCreateDto,
   type ObservationDto,
   type ServerResponse,
 } from '@/lib/types'
 
-const CACHE_EXPIRY_DAYS = 7 // 7 days
 const FORCE_REFRESH = false
 
 // Helper: fetch and cache inflation data from FRED API
@@ -29,13 +28,10 @@ async function fetchAndCacheInflationData({
   const data = fredRes.data
 
   // Transform FRED data to create DTOs
-  const transformed: ObservationCreateDto[] = data.observations.map((obs) => ({
+  const transformed = toObservationCreateDtos(
     inflationMeasure,
-    year: parseInt(obs.date.slice(0, 4)),
-    month: parseInt(obs.date.slice(5, 7)),
-    fredDate: obs.date,
-    value: obs.value === '.' ? 0 : parseFloat(obs.value),
-  }))
+    data.observations
+  )
 
   // Clear existing observations for this measure
   await prisma.observation.deleteMany({
@@ -100,11 +96,7 @@ async function getCachedObservations({
     }
 
     // Check if data is stale
-    const daysSinceUpdate = Math.floor(
-      (Date.now() - metadata.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
-    )
-
-    if (daysSinceUpdate >= CACHE_EXPIRY_DAYS) {
+    if (isCacheStale(metadata.updatedAt, Date.now())) {
       return {
         ok: false,
         message: 'Cached data is stale',
