@@ -77,7 +77,7 @@ async function fetchAndCacheInflationData({
   }
 }
 
-// Helper: get cached observations from MongoDB
+// Helper: get cached observations from the database
 async function getCachedObservations({
   inflationMeasure,
   startYear,
