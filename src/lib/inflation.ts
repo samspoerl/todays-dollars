@@ -18,19 +18,13 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24
 // one is the answer and the whole series is the chart.
 export function compoundObservations(
   startAmount: number,
-  inflationMeasure: InflationMeasure,
   observations: ObservationDto[]
 ): ObservationDto[] {
   let runningValue = startAmount
   return observations.map((obs) => {
+    // FRED's `pch` units are percentages (0.3 means 0.3%), not decimals.
     runningValue = runningValue * (1 + obs.value / 100)
-    return {
-      id: obs.id,
-      inflationMeasure,
-      year: obs.year,
-      month: obs.month,
-      value: runningValue,
-    }
+    return { ...obs, value: runningValue }
   })
 }
 

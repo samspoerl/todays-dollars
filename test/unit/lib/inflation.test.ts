@@ -18,12 +18,12 @@ function fred(date: string, value: string): FredObservation {
 
 describe('compoundObservations', () => {
   it('applies a single month', () => {
-    const [result] = compoundObservations(100, 'CPI', [obs(2020, 1, 1)])
+    const [result] = compoundObservations(100, [obs(2020, 1, 1)])
     expect(result.value).toBeCloseTo(101, 10)
   })
 
   it('compounds month over month rather than summing', () => {
-    const result = compoundObservations(100, 'CPI', [
+    const result = compoundObservations(100, [
       obs(2020, 1, 10),
       obs(2020, 2, 10),
     ])
@@ -34,7 +34,7 @@ describe('compoundObservations', () => {
   })
 
   it('carries the running value on every month, in input order', () => {
-    const result = compoundObservations(200, 'CPI', [
+    const result = compoundObservations(200, [
       obs(2020, 1, 0.5),
       obs(2020, 2, 0.2),
       obs(2020, 3, 0.3),
@@ -44,11 +44,15 @@ describe('compoundObservations', () => {
       [2020, 2],
       [2020, 3],
     ])
-    expect(result[2].value).toBeCloseTo(200 * 1.005 * 1.002 * 1.003, 10)
+    expect(result.map((r) => r.value)).toEqual([
+      expect.closeTo(200 * 1.005, 10),
+      expect.closeTo(200 * 1.005 * 1.002, 10),
+      expect.closeTo(200 * 1.005 * 1.002 * 1.003, 10),
+    ])
   })
 
   it('shrinks the value through a deflationary month', () => {
-    const result = compoundObservations(100, 'CPI', [
+    const result = compoundObservations(100, [
       obs(2020, 1, 2),
       obs(2020, 2, -1),
     ])
@@ -57,10 +61,7 @@ describe('compoundObservations', () => {
   })
 
   it('leaves the value unchanged through a 0% month', () => {
-    const result = compoundObservations(100, 'CPI', [
-      obs(2020, 1, 1),
-      obs(2020, 2, 0),
-    ])
+    const result = compoundObservations(100, [obs(2020, 1, 1), obs(2020, 2, 0)])
     expect(result[1].value).toBe(result[0].value)
   })
 
@@ -70,7 +71,7 @@ describe('compoundObservations', () => {
     const months = Array.from({ length: 960 }, (_, i) =>
       obs(1947 + Math.floor(i / 12), (i % 12) + 1, 0.3)
     )
-    const result = compoundObservations(100, 'CPI', months)
+    const result = compoundObservations(100, months)
     const expected = 100 * Math.pow(1.003, 960)
     expect(Math.abs(result.at(-1)!.value - expected) / expected).toBeLessThan(
       1e-12
@@ -78,18 +79,13 @@ describe('compoundObservations', () => {
   })
 
   it('returns an empty series for no observations', () => {
-    expect(compoundObservations(100, 'CPI', [])).toEqual([])
+    expect(compoundObservations(100, [])).toEqual([])
   })
 
-  it('stamps the requested measure and keeps id, year and month', () => {
-    const [result] = compoundObservations(100, 'PCE', [obs(2020, 1, 1)])
-    expect(result).toEqual({
-      id: 202001,
-      inflationMeasure: 'PCE',
-      year: 2020,
-      month: 1,
-      value: expect.any(Number),
-    })
+  it('keeps every field but value from the input row', () => {
+    const input = { ...obs(2020, 1, 1), inflationMeasure: 'PCE' as const }
+    const [result] = compoundObservations(100, [input])
+    expect(result).toEqual({ ...input, value: expect.closeTo(101, 10) })
   })
 })
 
@@ -148,7 +144,7 @@ describe('isCacheStale', () => {
     expect(isCacheStale(updatedAt, expiry)).toBe(true)
   })
 
-  it('is stale after the expiry', () => {
-    expect(isCacheStale(updatedAt, expiry + day)).toBe(true)
+  it('is stale one millisecond after the expiry', () => {
+    expect(isCacheStale(updatedAt, expiry + 1)).toBe(true)
   })
 })

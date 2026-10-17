@@ -40,10 +40,10 @@ src/
   lib/
     actions/             # Server Actions
       calculate.ts       # getInflationAdjustedAmounts — main calculation action
-    inflation.ts         # Pure inflation math: compounding, FRED→DTO, staleness
     fred/                # FRED API integration
       fred-api.ts        # callFred — fetches inflation series from FRED
       fred-types.ts      # FRED response types
+    inflation.ts         # Pure inflation math: compounding, FRED→DTO, staleness
     inflation-data.ts    # Reads/writes inflation observations to the database
     logs.ts              # Telemetry logging (logTelemetry)
     prisma.ts            # Shared Prisma client (pooled)
@@ -154,7 +154,7 @@ mirror the `src/` path of what they cover.
 - **A `.` in a FRED series is not only the first observation.** `pch` units
   have no change to report for the first month, but FRED also uses `.` for
   genuine mid-series gaps — CPI currently carries three (1947-01, plus 2025-10
-  and 2025-11). `inflation-data.ts` maps every `.` to `0`, so those months
+  and 2025-11). `toObservationCreateDtos` maps every `.` to `0`, so those months
   compound as **0% inflation** rather than being interpolated or skipped. That
   understates cumulative inflation across any range spanning them, and it does
   not error. The integration spec asserts the contract that actually matters —

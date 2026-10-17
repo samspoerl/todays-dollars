@@ -44,7 +44,7 @@ function expectMonthlyPchSeries(
   const first = observations[0]
   const last = observations[observations.length - 1]
 
-  // `inflation-data.ts` slices year and month out of this string by fixed
+  // `toObservationCreateDtos` slices year and month out of this string by fixed
   // offsets, so the format is load-bearing.
   expect(first.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   expect(first.date).toBe(expectedStart)
@@ -64,9 +64,9 @@ function expectMonthlyPchSeries(
   /**
    * The assertion worth the most here.
    *
-   * `inflation-data.ts` special-cases exactly one non-numeric token — `'.'` —
+   * `toObservationCreateDtos` special-cases exactly one non-numeric token — `'.'` —
    * and maps it to 0. Anything else (`''`, `'NA'`, `null`) would survive
-   * `parseFloat` as NaN, and the running product in `calculate.ts` would turn
+   * `parseFloat` as NaN, and the running product in `compoundObservations` would turn
    * every subsequent month into NaN. So the contract is not "values are
    * numeric"; it is "the only non-numeric value is `.`".
    *
@@ -93,7 +93,7 @@ describe.skipIf(!hasFredCredentials())('callFred', () => {
 
     const { data } = result
 
-    // `units=pch` is the request this code makes and the reason `calculate.ts`
+    // `units=pch` is the request this code makes and the reason `compoundObservations`
     // can compound the values directly. If FRED ever echoed something else
     // back, the app would compound index levels and be wrong without erroring.
     expect(data.units).toBe('pch')

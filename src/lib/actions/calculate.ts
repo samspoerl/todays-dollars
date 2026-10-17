@@ -34,11 +34,7 @@ export async function getInflationAdjustedAmounts({
     }
   }
 
-  const inflationAdjAmounts = compoundObservations(
-    startAmount,
-    inflationMeasure,
-    observations
-  )
+  const inflationAdjAmounts = compoundObservations(startAmount, observations)
 
   // Log metrics
   // Use 'after' to log metrics after returning response to client

@@ -4,7 +4,6 @@ import { defineConfig } from 'vitest/config'
 // Unit tests only. Everything under test here is a pure function or a Zod
 // schema — no DOM, no database, no Next.js request context — so `node` is both
 // the fastest environment and the honest one.
-
 export default defineConfig({
   resolve: {
     alias: {
