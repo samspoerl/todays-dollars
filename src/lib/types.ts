@@ -37,17 +37,33 @@ export type MetadataDto = Metadata
 
 // FORM INPUTS
 
-const currentYear = new Date().getFullYear()
+// The first full year FRED has data for in each series (CPIAUCSL, PCEPI).
+export const MIN_START_YEAR: Record<InflationMeasure, number> = {
+  CPI: 1947,
+  PCE: 1959,
+}
 
-export const inputsSchema = z.object({
-  inflationMeasure: z.enum(['CPI', 'PCE']),
-  startAmount: z.coerce.number().positive('Amount must be positive'),
-  startYear: z.coerce
-    .number()
-    .int()
-    .min(1947, 'Year must be 1947 or later')
-    .max(currentYear, `Year must be ${currentYear} or earlier`),
-})
+export const MAX_START_YEAR = new Date().getFullYear()
+
+export const inputsSchema = z
+  .object({
+    inflationMeasure: z.enum(['CPI', 'PCE']),
+    startAmount: z.coerce.number().positive('Amount must be positive'),
+    startYear: z.coerce
+      .number()
+      .int()
+      .max(MAX_START_YEAR, `Year must be ${MAX_START_YEAR} or earlier`),
+  })
+  .superRefine(({ inflationMeasure, startYear }, ctx) => {
+    const minYear = MIN_START_YEAR[inflationMeasure]
+    if (startYear < minYear) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['startYear'],
+        message: `Year must be ${minYear} or later for ${inflationMeasure}`,
+      })
+    }
+  })
 
 export type CalculationInputs = z.infer<typeof inputsSchema>
 

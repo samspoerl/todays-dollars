@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getInflationAdjustedAmounts } from '@/lib/actions/calculate'
 import { INFLATION_MEASURE_COOKIE } from '@/lib/constants'
@@ -19,6 +20,8 @@ import {
   CalculationResult,
   InflationMeasure,
   inputsSchema,
+  MAX_START_YEAR,
+  MIN_START_YEAR,
 } from '@/lib/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlayIcon } from 'lucide-react'
@@ -61,7 +64,24 @@ export function InputForm({
     setMeasureCookie(watchedMeasure)
   }, [watchedMeasure])
 
+  // UTILS
+  // Newest first, so recent years are the shortest scroll away.
+  const years = Array.from(
+    { length: MAX_START_YEAR - MIN_START_YEAR[watchedMeasure] + 1 },
+    (_, i) => MAX_START_YEAR - i
+  )
+
   // EVENT HANDLERS
+  function handleMeasureChange(measure: InflationMeasure) {
+    form.setValue('inflationMeasure', measure)
+    // Switching to a series that starts later would otherwise leave the select
+    // holding a year it no longer offers.
+    const minYear = MIN_START_YEAR[measure]
+    if (form.getValues('startYear') < minYear) {
+      form.setValue('startYear', minYear)
+    }
+  }
+
   async function onSubmit(values: CalculationInputs) {
     setIsLoading(true)
     try {
@@ -96,7 +116,9 @@ export function InputForm({
               <FormLabel>Inflation Measure</FormLabel>
               <FormControl>
                 <RadioGroup
-                  onValueChange={field.onChange}
+                  onValueChange={(value) =>
+                    handleMeasureChange(value as InflationMeasure)
+                  }
                   value={field.value}
                   className="flex flex-row"
                 >
@@ -125,7 +147,7 @@ export function InputForm({
             control={form.control}
             name="startAmount"
             render={({ field }) => (
-              <FormItem className="mx-1 inline-block">
+              <FormItem className="mx-1 inline-block align-middle">
                 <FormControl>
                   <Input
                     {...field}
@@ -141,13 +163,24 @@ export function InputForm({
             control={form.control}
             name="startYear"
             render={({ field }) => (
-              <FormItem className="mx-1 inline-block">
+              <FormItem className="mx-1 inline-block align-middle">
                 <FormControl>
-                  <Input
+                  <NativeSelect
                     {...field}
-                    className="inline-block w-20 text-center"
-                    placeholder="1975"
-                  />
+                    value={String(field.value)}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    // Matches the amount Input: same padding and text size (16px
+                    // below md keeps iOS from zooming on focus), centered text,
+                    // and no fill. text-align-last is what centers a select's
+                    // value; text-align alone doesn't reach it.
+                    className="w-24 py-1 text-center text-base [text-align-last:center] md:text-sm dark:bg-transparent dark:hover:bg-transparent"
+                  >
+                    {years.map((year) => (
+                      <NativeSelectOption key={year} value={year}>
+                        {year}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
                 </FormControl>
               </FormItem>
             )}
